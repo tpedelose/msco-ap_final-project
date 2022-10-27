@@ -1,0 +1,39 @@
+<resources>
+
+    <!--  Home view  -->
+    <string-array name="start_entries">
+        <item>Inbox</item>
+        <item>Collections</item>
+        <item>Read Later</item>
+    </string-array>
+
+    <string-array name="start_values">
+        <item>inbox</item>
+        <item>collections</item>
+        <item>read_later</item>
+    </string-array>
+
+    <!--  Article sorting  -->
+    <string-array name="sort_entries">
+        <item>Newest first</item>
+        <item>Oldest first</item>
+        <item>Quick reads</item>
+    </string-array>
+
+    <string-array name="sort_values">
+        <item>new</item>
+        <item>old</item>
+        <item>quick</item>
+    </string-array>
+    <!-- Reply Preference -->
+    <string-array name="reply_entries">
+        <item>Reply</item>
+        <item>Reply to all</item>
+    </string-array>
+
+    <string-array name="reply_values">
+        <item>reply</item>
+        <item>reply_all</item>
+    </string-array>
+
+</resources>

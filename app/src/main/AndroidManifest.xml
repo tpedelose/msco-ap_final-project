@@ -13,9 +13,24 @@
         android:theme="@style/Theme.AntiMatter"
         tools:targetApi="31">
         <activity
+            android:name=".SettingsActivity2"
+            android:exported="false"
+            android:label="@string/title_activity_settings2">
+            <meta-data
+                android:name="android.app.lib_name"
+                android:value="" />
+        </activity>
+        <activity
+            android:name=".ui.settings.SettingsActivity"
+            android:exported="false"
+            android:label="@string/title_activity_settings">
+            <meta-data
+                android:name="android.app.lib_name"
+                android:value="" />
+        </activity>
+        <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:label="@string/app_name"
             android:theme="@style/Theme.AntiMatter">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -26,6 +41,13 @@
             <meta-data
                 android:name="android.app.lib_name"
                 android:value="" />
+        </activity>
+        <activity
+            android:name=".ui.article.ArticleActivity"
+            android:exported="false"
+            android:theme="@style/Theme.AntiMatter">
+
+            <!-- https://medium.com/androiddevelopers/custom-text-selection-actions-with-action-process-text-191f792d2999 -->
         </activity>
     </application>
 

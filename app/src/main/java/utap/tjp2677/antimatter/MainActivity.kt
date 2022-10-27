@@ -26,5 +26,6 @@ class MainActivity : AppCompatActivity() {
         navView.setupWithNavController(navController)
         navView.labelVisibilityMode = NavigationBarView.LABEL_VISIBILITY_UNLABELED
 //        navView.minimumHeight = 176
+
     }
 }

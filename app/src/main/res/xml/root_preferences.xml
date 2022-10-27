@@ -1,0 +1,62 @@
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory app:title="Personalization">
+        <ListPreference
+            app:defaultValue="inbox"
+            app:entries="@array/start_entries"
+            app:entryValues="@array/start_values"
+            app:icon="@drawable/ic_outline_home_24"
+            app:key="start_page"
+            app:title="Start view"
+            app:useSimpleSummaryProvider="true" />
+
+        <SwitchPreferenceCompat
+            app:icon="@drawable/ic_outline_vibration_24"
+            app:key="haptics"
+            app:title="Enable haptics" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="Feed">
+
+        <SwitchPreferenceCompat
+            app:icon="@drawable/ic_outline_done_all_24"
+            app:key="auto_mark_as_read"
+            app:title="Mark as read on scroll" />
+
+        <ListPreference
+            app:defaultValue="new"
+            app:entries="@array/sort_entries"
+            app:entryValues="@array/sort_values"
+            app:icon="@drawable/ic_outline_sort_24"
+            app:key="sort"
+            app:title="Article sort default"
+            app:useSimpleSummaryProvider="true" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="@string/messages_header">
+
+        <EditTextPreference
+            app:key="signature"
+            app:title="@string/signature_title"
+            app:useSimpleSummaryProvider="true" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="@string/sync_header">
+
+        <SwitchPreferenceCompat
+            app:key="sync"
+            app:title="@string/sync_title" />
+
+        <SwitchPreferenceCompat
+            app:dependency="sync"
+            app:key="attachment"
+            app:summaryOff="@string/attachment_summary_off"
+            app:summaryOn="@string/attachment_summary_on"
+            app:title="@string/attachment_title" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>

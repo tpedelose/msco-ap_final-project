@@ -3,11 +3,26 @@ package utap.tjp2677.antimatter.ui.feed
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import utap.tjp2677.antimatter.Article
+import utap.tjp2677.antimatter.Repository
 
 class FeedViewModel: ViewModel() {
 
-    private val _text = MutableLiveData<String>().apply {
-        value = "This is feed Fragment"
+    private var repository = Repository()
+    private var articleList = MutableLiveData<List<Article>>()
+
+    init {
+        reset()
     }
-    val text: LiveData<String> = _text
+
+    private fun reset() {
+        articleList.apply {
+            value = repository.fetchData()
+        }
+    }
+
+    fun observeArticles(): LiveData<List<Article>> {
+        return articleList
+    }
+
 }

@@ -9,16 +9,17 @@
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp">
 
         <TextView
             android:id="@+id/author"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/article_author"
+            android:textIsSelectable="true"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            />
+            app:layout_constraintStart_toStartOf="parent" />
 
         <TextView
             android:id="@+id/separator"
@@ -37,6 +38,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/article_publication"
+            android:textIsSelectable="true"
             app:layout_constraintStart_toEndOf="@+id/separator"
             app:layout_constraintBaseline_toBaselineOf="@+id/separator"
             android:layout_marginStart="12dp"
@@ -50,6 +52,7 @@
         android:layout_height="wrap_content"
         android:text="@string/article_title"
         android:textAppearance="?attr/textAppearanceTitleLarge"
+        android:textIsSelectable="true"
         app:layout_constraintTop_toTopOf="parent"
         />
 </androidx.appcompat.widget.LinearLayoutCompat>
