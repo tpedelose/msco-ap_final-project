@@ -5,71 +5,76 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="8dp">
+    android:hapticFeedbackEnabled="true"
+    android:background="?attr/colorSurface">
 
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/card"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:orientation="horizontal"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintEnd_toEndOf="parent" >
 
+        <ImageView
+            android:id="@+id/heroImage"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginStart="8dp"
+            android:scaleType="centerCrop"
+            android:contentDescription="TODO" />
+
+        <!-- Media -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:padding="16dp">
 
-            <!-- Media -->
-            <LinearLayout
-                android:layout_width="match_parent"
+            <!-- Title, secondary, and supporting text -->
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <!-- Title, secondary, and supporting text -->
-                <androidx.constraintlayout.widget.ConstraintLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="8dp">
-
-                    <TextView
-                        android:id="@+id/author"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Author"
-                        android:textAppearance="?attr/textAppearanceBodyMedium"
-                        android:textColor="?android:attr/textColorSecondary"
-                        android:layout_marginEnd="12dp"
-                        />
-
-                    <TextView
-                        android:id="@+id/publication"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Publication"
-                        android:textAppearance="?attr/textAppearanceBodyMedium"
-                        android:textColor="?android:attr/textColorSecondary"
-                        app:layout_constraintStart_toEndOf="@+id/author"
-                        app:layout_constraintBaseline_toBaselineOf="@+id/author"
-                        android:layout_marginStart="12dp"
-                        />
-
-                </androidx.constraintlayout.widget.ConstraintLayout>
+                android:layout_marginBottom="8dp">
 
                 <TextView
-                    android:id="@+id/title"
+                    android:id="@+id/author"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Article Title - Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua "
-                    android:textAppearance="?attr/textAppearanceTitleMedium"
+                    android:text="Author"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textColor="?android:attr/textColorSecondary"
+                    android:layout_marginEnd="12dp"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
                     />
 
-            </LinearLayout>
+                <TextView
+                    android:id="@+id/publication"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Publication"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textColor="?android:attr/textColorSecondary"
+                    app:layout_constraintStart_toEndOf="@+id/author"
+                    app:layout_constraintBaseline_toBaselineOf="@+id/author"
+                    android:layout_marginStart="12dp"
+                    />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <TextView
+                android:id="@+id/title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Article Title - Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua "
+                android:textAppearance="?attr/textAppearanceTitleMedium"
+                />
 
         </LinearLayout>
 
-    </com.google.android.material.card.MaterialCardView>
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -17,4 +17,10 @@
         android:label="@string/title_collections"
         tools:layout="@layout/fragment_collections" />
 
+    <fragment
+        android:id="@+id/navigation_search"
+        android:name="utap.tjp2677.antimatter.ui.search.SearchFragment"
+        android:label="@string/title_search"
+        tools:layout="@layout/fragment_search" />
+
 </navigation>

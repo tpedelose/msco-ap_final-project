@@ -3,36 +3,27 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <androidx.appcompat.widget.LinearLayoutCompat
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/titlebar_container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:fitsSystemWindows="true"
+        app:liftOnScroll="true">
 
-        <com.google.android.material.appbar.AppBarLayout
-            android:id="@+id/titlebar_container"
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/titlebar"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:fitsSystemWindows="true"
-            app:layout_constraintTop_toTopOf="parent"
-            app:liftOnScroll="true">
+            android:layout_height="?attr/actionBarSize"
+            app:navigationIcon="@drawable/ic_outline_close_24"
+            app:title="Settings"
+            style="@style/Widget.Material3.BottomAppBar" />
 
-            <com.google.android.material.appbar.MaterialToolbar
-                android:id="@+id/titlebar"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:elevation="0dp"
-                app:navigationIcon="@drawable/ic_outline_close_24"
-                app:title="Settings"
-                style="@style/Widget.Material3.BottomAppBar" />
+    </com.google.android.material.appbar.AppBarLayout>
 
-        </com.google.android.material.appbar.AppBarLayout>
-
-
-        <FrameLayout
-            android:id="@+id/settings"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent" />
-
-    </androidx.appcompat.widget.LinearLayoutCompat>
+    <FrameLayout
+        app:layout_behavior="@string/appbar_scrolling_view_behavior"
+        android:id="@+id/settings"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

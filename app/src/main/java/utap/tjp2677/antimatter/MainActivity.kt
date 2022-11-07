@@ -1,5 +1,6 @@
 package utap.tjp2677.antimatter
 
+import android.os.Build
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.navigation.fragment.NavHostFragment
@@ -7,6 +8,7 @@ import androidx.navigation.ui.setupWithNavController
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.navigation.NavigationBarView
 import utap.tjp2677.antimatter.databinding.ActivityMainBinding
+
 
 class MainActivity : AppCompatActivity() {
 
@@ -26,6 +28,9 @@ class MainActivity : AppCompatActivity() {
         navView.setupWithNavController(navController)
         navView.labelVisibilityMode = NavigationBarView.LABEL_VISIBILITY_UNLABELED
 //        navView.minimumHeight = 176
+
+        // Draw behind navigation and status bars
+        window.setDecorFitsSystemWindows(false)
 
     }
 }

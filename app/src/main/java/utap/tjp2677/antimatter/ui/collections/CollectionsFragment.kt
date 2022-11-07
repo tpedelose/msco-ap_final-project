@@ -13,19 +13,15 @@ import utap.tjp2677.antimatter.databinding.FragmentCollectionsBinding
 class CollectionsFragment : Fragment() {
 
     private var _binding: FragmentCollectionsBinding? = null
-    private val viewModel: MainViewModel by activityViewModels()
-
-    // This property is only valid between onCreateView and
-    // onDestroyView.
-    private val binding get() = _binding!!
+    private val binding get() = _binding!! // This property is only valid between onCreateView and onDestroyView.
+    private val mainViewModel: MainViewModel by activityViewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        val collectionsViewModel =
-            ViewModelProvider(this)[CollectionsViewModel::class.java]
+        val viewModel = ViewModelProvider(this)[CollectionsViewModel::class.java]
 
         _binding = FragmentCollectionsBinding.inflate(inflater, container, false)
 
@@ -36,7 +32,7 @@ class CollectionsFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         binding.testButton.setOnClickListener {
-            viewModel.openSettings(it.context)
+            mainViewModel.openSettings(it.context)
         }
     }
 

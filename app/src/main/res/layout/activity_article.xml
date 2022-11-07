@@ -2,52 +2,78 @@
 <androidx.coordinatorlayout.widget.CoordinatorLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    >
+    android:layout_height="match_parent" >
 
-    <androidx.core.widget.NestedScrollView
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <androidx.appcompat.widget.LinearLayoutCompat
+        <androidx.core.widget.NestedScrollView
+            android:id="@+id/article"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:paddingBottom="?attr/actionBarSize" >
+            android:layout_height="match_parent" >
 
-            <include layout="@layout/article_header"
-                android:id="@+id/header" />
-
-            <TextView
-                android:id="@+id/content"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:text="@string/lorem_ipsum"
-                android:textIsSelectable="true"
-                android:padding="16dp"/>
+                android:orientation="vertical"
+                android:paddingBottom="?attr/actionBarSize" >
 
-        </androidx.appcompat.widget.LinearLayoutCompat>
+                <include layout="@layout/article_header"
+                    android:id="@+id/header" />
 
-    </androidx.core.widget.NestedScrollView>
+                <LinearLayout
+                    android:id="@+id/content_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical" >
 
+                    <TextView
+                        android:id="@+id/content"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:text="@string/lorem_ipsum"
+                        android:textIsSelectable="true"
+                        android:textAppearance="?attr/textAppearanceBodyLarge"
+                        android:padding="16dp" />
 
-    <com.google.android.material.appbar.AppBarLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom"
-        android:fitsSystemWindows="true"
-        app:liftOnScroll="true">
+                </LinearLayout>
 
-        <com.google.android.material.appbar.MaterialToolbar
-            android:id="@+id/bottomAppBar"
+            </LinearLayout>
+
+        </androidx.core.widget.NestedScrollView>
+
+        <include
+            layout="@layout/fragment_player"
             android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:background="@drawable/bottom_app_bar_border"
-            app:menu="@menu/bottom_app_bar_article"
-            app:navigationIcon="@drawable/ic_outline_keyboard_double_arrow_left_24"
-            style="@style/Widget.Material3.BottomAppBar" />
+            android:layout_height="wrap_content"
+            app:layout_constraintBottom_toTopOf="@id/bottomAppBar_container"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:name="utap.tjp2677.antimatter.ui.player.PlayerFragment" />
 
-    </com.google.android.material.appbar.AppBarLayout>
+        <com.google.android.material.appbar.AppBarLayout
+            android:id="@+id/bottomAppBar_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:fitsSystemWindows="true"
+            app:layout_constraintBottom_toBottomOf="@+id/article"
+            app:liftOnScroll="true">
+
+            <com.google.android.material.appbar.MaterialToolbar
+                android:id="@+id/bottomAppBar"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:background="?attr/colorSurface"
+                android:elevation="4dp"
+                app:menu="@menu/bottom_app_bar_article"
+                app:navigationIcon="@drawable/ic_outline_keyboard_double_arrow_left_24" />
+
+        </com.google.android.material.appbar.AppBarLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

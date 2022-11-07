@@ -2,57 +2,119 @@
 <androidx.appcompat.widget.LinearLayoutCompat
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp"
+    android:paddingTop="16dp"
+    android:paddingBottom="8dp">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <LinearLayout
+        android:id="@+id/publication"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp">
+        android:orientation="horizontal"
+        android:layout_marginBottom="12dp">
 
-        <TextView
-            android:id="@+id/author"
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/publication_image"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/article_author"
-            android:textIsSelectable="true"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintStart_toStartOf="parent" />
+            android:layout_height="match_parent"
+            android:layout_marginEnd="6dp"
+            android:src="@drawable/ic_outline_newspaper_24"/>
 
         <TextView
-            android:id="@+id/separator"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="for"
-            app:layout_constraintStart_toEndOf="@+id/author"
-            app:layout_constraintBaseline_toBaselineOf="@id/author"
-            app:layout_constraintEnd_toStartOf="@id/publication"
-            android:layout_marginStart="12dp"
-            android:layout_marginEnd="12dp"
-            />
-
-        <TextView
-            android:id="@+id/publication"
+            android:id="@+id/publication_name"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/article_publication"
+            android:textAppearance="?attr/textAppearanceSubtitle1"
             android:textIsSelectable="true"
-            app:layout_constraintStart_toEndOf="@+id/separator"
-            app:layout_constraintBaseline_toBaselineOf="@+id/separator"
-            android:layout_marginStart="12dp"
-            />
+            tools:ignore="TouchTargetSizeCheck" />
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
+    </LinearLayout>
 
     <TextView
         android:id="@+id/title"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/article_title"
-        android:textAppearance="?attr/textAppearanceTitleLarge"
+        android:textAppearance="?attr/textAppearanceHeadline5"
         android:textIsSelectable="true"
-        app:layout_constraintTop_toTopOf="parent"
+        android:textStyle="bold"
+        android:layout_marginBottom="12dp"
+        android:layout_marginEnd="12dp"
         />
+
+    <LinearLayout
+        android:id="@+id/author"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/author_image"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_marginEnd="6dp"
+            android:src="@drawable/ic_outline_person_24"/>
+
+        <TextView
+            android:id="@+id/author_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="12dp"
+            android:text="@string/article_author"
+            android:textAppearance="?attr/textAppearanceSubtitle1"
+            android:textIsSelectable="true"
+            tools:ignore="TouchTargetSizeCheck" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/metadata"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/word_count"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="12dp"
+            android:text="1000 words"/>
+
+        <TextView
+            android:id="@+id/read_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="5 Minutes"/>
+
+        <android.widget.Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" >
+        </android.widget.Space>
+
+        <Button
+            android:id="@+id/play_article"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Listen"
+            app:icon="@drawable/ic_outline_play_arrow_24"
+            style="@style/Widget.Material3.Button.TonalButton.Icon"/>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="end">
+        <!--    TODO: Tags    -->
+
+
+    </LinearLayout>
+
 </androidx.appcompat.widget.LinearLayoutCompat>

@@ -1,9 +1,7 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">AntiMatter</string>
-    <string name="action_settings">Settings</string>
-    <!-- Strings used for fragments for navigation -->
-    <string name="first_fragment_label">First Fragment</string>
-    <string name="second_fragment_label">Second Fragment</string>
+    <string name="todo">TODO</string>
+
     <string name="next">Next</string>
     <string name="previous">Previous</string>
 
@@ -43,9 +41,11 @@
         libero vel nunc consequat, quis tincidunt nisl eleifend. Cras bibendum enim a justo luctus
         vestibulum. Fusce dictum libero quis erat maximus, vitae volutpat diam dignissim.
     </string>
-    <string name="todo">TODO</string>
+    <!-- Strings used for fragments for navigation -->
+
     <string name="title_feed">Feed</string>
     <string name="title_collections">Collections</string>
+    <string name="title_search">Search</string>
 
     <string name="article_url">https://www.polygon.com/reviews/23414843/black-adam-review-dwayne-johnson-hawkman-doctor-fate</string>
     <string name="article_title">Black Adam isn’t nearly as subversive as it’s meant to be</string>
@@ -53,6 +53,7 @@
     <string name="article_publication">Polygon</string>
 
     <string name="title_activity_settings">SettingsActivity</string>
+    <string name="action_settings">Settings</string>
 
     <!-- Preference Titles -->
     <string name="messages_header">Messages</string>
@@ -68,6 +69,7 @@
     <string name="attachment_summary_on">Automatically download attachments for incoming emails
     </string>
     <string name="attachment_summary_off">Only download attachments when manually requested</string>
-    <string name="title_activity_settings2">SettingsActivity2</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 
 </resources>

@@ -15,6 +15,7 @@ class MainViewModel : ViewModel() {
 
     private var repository = Repository()
     private var articleList = MutableLiveData<List<Article>>()
+    private var readLaterArticleList = MutableLiveData<List<Article>>()
 
     init {
         reset()  // Initialize values on instantiation

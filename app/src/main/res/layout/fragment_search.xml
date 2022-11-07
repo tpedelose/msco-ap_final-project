@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".ui.feed.FeedFragment">
+    tools:context=".ui.search.SearchFragment">
 
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/titlebar"
@@ -24,20 +24,24 @@
                 android:layout_height="?attr/actionBarSize"
                 android:elevation="0dp"
                 app:layout_collapseMode="pin"
-                app:menu="@menu/app_bar_feed_menu"
-                app:title="Feed" />
+                app:title="Search" />
 
         </com.google.android.material.appbar.CollapsingToolbarLayout>
 
     </com.google.android.material.appbar.AppBarLayout>
 
-    <androidx.recyclerview.widget.RecyclerView
+    <LinearLayout
         app:layout_behavior="@string/appbar_scrolling_view_behavior"
-        android:id="@+id/feed_list"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-        tools:listitem="@layout/feed_item" />
+        android:gravity="end"
+        android:orientation="vertical">
+
+        <FrameLayout
+            android:id="@+id/results"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
+
+    </LinearLayout>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
-
