@@ -1,46 +1,63 @@
 package utap.tjp2677.antimatter.ui.article
 
+import android.content.Context
+import android.content.Intent
 import android.content.res.Resources
 import android.graphics.Color
+import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Drawable
+import android.net.Uri
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.text.Html
+import android.text.Html.ImageGetter
+import android.text.Spannable
+import android.text.Spanned
 import android.text.method.LinkMovementMethod
+import android.text.style.BackgroundColorSpan
 import android.util.Log
-import android.util.TypedValue
 import android.view.*
 import android.widget.ImageView
+import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.MenuProvider
 import androidx.core.view.setPadding
 import androidx.lifecycle.Lifecycle
+import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.bitmap.RoundedCorners
+import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.RequestOptions
-import com.xeoh.android.texthighlighter.TextHighlighter
+import com.bumptech.glide.request.target.ViewTarget
+import com.google.android.material.color.MaterialColors
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import utap.tjp2677.antimatter.Article
 import utap.tjp2677.antimatter.MainViewModel
 import utap.tjp2677.antimatter.R
 import utap.tjp2677.antimatter.databinding.ActivityArticleBinding
-import utap.tjp2677.antimatter.utils.utils.*
+import utap.tjp2677.antimatter.utils.toDp
+import utap.tjp2677.antimatter.utils.toPx
 import kotlin.math.max
 import kotlin.math.roundToInt
+
 
 //https://www.google.com/search?q=how+fast+does+the+average+person+read
 const val wordsPerMinute = 200
 
 class ArticleActivity : AppCompatActivity() {
 
-    private val viewModel: MainViewModel by viewModels()
-    private var glideOptions = RequestOptions ()
-        .fitCenter()
-        .transform(RoundedCorners (20))
-
     companion object {
         const val articleKey = "article"
     }
 
     private lateinit var binding: ActivityArticleBinding
+    private val viewModel: MainViewModel by viewModels()
+    private var glideOptions = RequestOptions()
+        .fitCenter()
+        .transform(RoundedCorners (20.toDp.toInt()))
     private val textToSpeechEngine: TextToSpeech by lazy {
         // Pass in context and the listener.
         TextToSpeech(this,
@@ -61,11 +78,9 @@ class ArticleActivity : AppCompatActivity() {
 
         setContentView(binding.root)
         setSupportActionBar(binding.bottomAppBar)
-
         initActionBar()
-//        initHighlighter()
 
-        // Todo:  Find a non-deprecated way
+        // Todo:  Find a non-deprecated way;  Switch to fragment with ViewModel?
         (intent.extras?.getSerializable(articleKey) as Article).let {
             // Save article for later;  TODO?: move into viewModel
             article = it
@@ -88,9 +103,14 @@ class ArticleActivity : AppCompatActivity() {
             binding.header.publicationName.text = it.publication.name
             binding.header.title.text = it.title
 
-            val articleContent =  Html.fromHtml(it.content, Html.FROM_HTML_MODE_LEGACY)
+            val articleContent = Html.fromHtml(it.content, Html.FROM_HTML_MODE_LEGACY)
+//            val articleContent = Html.fromHtml(it.content, Html.FROM_HTML_MODE_LEGACY, GlideImageGetter(this), null)
+
+            Log.d("Helo:", articleContent[0].toString())
+
             binding.content.text = articleContent
             binding.content.movementMethod = LinkMovementMethod.getInstance();
+
 
             Log.d("HTML", articleContent.toString())
 
@@ -102,10 +122,10 @@ class ArticleActivity : AppCompatActivity() {
         }
 
 
-        binding.content.setOnCreateContextMenuListener { contextMenu, view, contextMenuInfo ->
-            super.onCreateContextMenu(contextMenu, view, contextMenuInfo)
-        }
+        // Set a text-selection callback
+        binding.content.customSelectionActionModeCallback = SelectionCallback(binding.content)
 
+        // Set a listener to play the article
         binding.header.playArticle.setOnClickListener {
             // https://rtdtwo.medium.com/speech-to-text-and-text-to-speech-with-android-85758ff0f6d3
 
@@ -151,18 +171,6 @@ class ArticleActivity : AppCompatActivity() {
         super.onDestroy()
     }
 
-
-    override fun onCreateContextMenu(
-        menu: ContextMenu?,
-        v: View?,
-        menuInfo: ContextMenu.ContextMenuInfo?
-    ) {
-        super.onCreateContextMenu(menu, v, menuInfo)
-
-        Log.d(javaClass.simpleName, "WERE HERE")
-        Log.d(javaClass.simpleName, "$menuInfo")
-    }
-
     private fun initActionBar() {
         supportActionBar?.let {
             // Disable the default and enable the custom
@@ -172,25 +180,36 @@ class ArticleActivity : AppCompatActivity() {
         }.also {
             val appbar = binding.bottomAppBar
 
+            initMenuProvider()
+
             appbar.setNavigationOnClickListener {
+                // Finish activity on back
                 finish()
             }
 
             appbar.setOnMenuItemClickListener { menuItem ->
                 when (menuItem.itemId) {
                     R.id.add -> {
+                        // TODO
                         // Handle favorite icon press
                         true
                     }
                     R.id.more -> {
+                        // TODO
                         // Handle more item (inside overflow menu) press
+                        true
+                    }
+                    R.id.open_in_browser -> {
+                        // Handle open in browser
+                        Log.d("URL", "${article?.url}")
+                        article?.url?.let { url: String -> openWebPage(url) }
                         true
                     }
                     else -> false
                 }
             }
 
-            initMenuProvider()
+
         }
     }
 
@@ -198,10 +217,6 @@ class ArticleActivity : AppCompatActivity() {
         addMenuProvider(object : MenuProvider {
             override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
                 menuInflater.inflate(R.menu.bottom_app_bar_article, menu)
-
-//                menu.add(
-//                    Menu.NONE, Menu.NONE, 0, "Test"
-//                ).setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS)
             }
 
             override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
@@ -211,34 +226,100 @@ class ArticleActivity : AppCompatActivity() {
     }
 
     private fun glideFetch(url: String?, imageView: ImageView) {
-        com.bumptech.glide.Glide.with(imageView.context)
+        Glide.with(imageView.context)
             .asBitmap() // Try to display animated Gifs and video still
             .load(url)
             .apply(glideOptions)
             .into(imageView)
     }
 
-    private fun initHighlighter() {
-        TextHighlighter()
-            .setBackgroundColor(Color.YELLOW)
-            .setForegroundColor(Color.YELLOW)
+//    private fun glideFetchDrawable(url: String?): Drawable {
+//        Glide.with(this)
+//            .asBitmap()
+//            .load(url)
+//            .into(object : CustomTarget<Bitmap>(){
+//                override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
+//                    val im = ImageView(this)
+//                    im.setImageBitmap(resource)
+//                    return im
+//                }
+//                override fun onLoadCleared(placeholder: Drawable?) {
+//                    // this is called when imageView is cleared on lifecycle call or for
+//                    // some other reason.
+//                    // if you are referencing the bitmap somewhere else too other than this imageView
+//                    // clear it here as you can no longer have the bitmap
+//                }
+//            })
+//    }
 
-        binding.content.setOnClickListener {
-            TextHighlighter()
-                .setBackgroundColor(Color.parseColor("#FFFF00"))
-                .addTarget(it)
-                .highlight("Princess Heart", TextHighlighter.BASE_MATCHER)
+    private fun openWebPage(url: String) {
+        val webpage: Uri = Uri.parse(url)
+        val intent = Intent(Intent.ACTION_VIEW, webpage)
+        if (intent.resolveActivity(packageManager) != null) {
+            startActivity(intent)
+        } else {
+            Toast.makeText(this, "No browsers installed", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    class GlideImageGetter(val context: Context) : ImageGetter {
+
+        override fun getDrawable(source: String?): Drawable? {
+
+            return context.getDrawable(R.drawable.ic_outline_album_24)
+
+//            return CoroutineScope(Dispatchers.IO).launch {
+//                return@launch Glide.with(context)
+//                    .asDrawable()
+//                    .load(source)
+//                    .placeholder(R.drawable.ic_outline_album_24)
+//                    .submit(100, 100)
+//                    .get()
+//            }
 
         }
     }
+
 }
 
-val Number.toPx get() = TypedValue.applyDimension(
-    TypedValue.COMPLEX_UNIT_DIP,
-    this.toFloat(),
-    Resources.getSystem().displayMetrics)
+class SelectionCallback(textView: TextView) : ActionMode.Callback {
+    // https://stackoverflow.com/questions/12995439/custom-cut-copy-action-bar-for-edittext-that-shows-text-selection-handles/13004720#13004720
+    private val TAG = "TextSelectionCallback"
+    private val selectedTextView = textView
 
-val Number.toDp get() = TypedValue.applyDimension(
-    TypedValue.COMPLEX_UNIT_PX,
-    this.toFloat(),
-    Resources.getSystem().displayMetrics)
+    override fun onCreateActionMode(p0: ActionMode?, p1: Menu?): Boolean {
+        p0!!.menuInflater.inflate(R.menu.acticle_text_selection, p1)
+        return true
+    }
+
+    override fun onPrepareActionMode(p0: ActionMode?, p1: Menu?): Boolean {
+        // Remove select all?
+        p1?.removeItem(android.R.id.selectAll)
+        return true
+    }
+
+    override fun onActionItemClicked(p0: ActionMode?, p1: MenuItem?): Boolean {
+        Log.d(TAG, "onActionItemClicked item=${p1.toString()}/${p1?.itemId}")
+
+        val start: Int = selectedTextView.selectionStart
+        val end: Int = selectedTextView.selectionEnd
+
+        return when (p1?.itemId) {
+            utap.tjp2677.antimatter.R.id.highlight -> {
+                val textToHighlight = selectedTextView.text as Spannable
+                val highlightColor = MaterialColors.getColor(
+                    selectedTextView.context, com.google.android.material.R.attr.colorPrimaryContainer, Color.YELLOW)
+
+                textToHighlight.setSpan(BackgroundColorSpan(highlightColor), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                selectedTextView.text = textToHighlight
+                true
+            }
+            else -> false
+        }
+    }
+
+    override fun onDestroyActionMode(p0: ActionMode?) {
+    }
+}
+
+

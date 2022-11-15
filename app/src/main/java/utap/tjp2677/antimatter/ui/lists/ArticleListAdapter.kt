@@ -15,23 +15,30 @@ import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
-import kotlin.math.abs
-import kotlin.math.max
-import kotlin.math.min
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.resource.bitmap.RoundedCorners
+import com.bumptech.glide.request.RequestOptions
 import utap.tjp2677.antimatter.Article
 import utap.tjp2677.antimatter.MainViewModel
 import utap.tjp2677.antimatter.R
 import utap.tjp2677.antimatter.databinding.FeedItemBinding
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.resource.bitmap.RoundedCorners
-import com.bumptech.glide.request.RequestOptions
+import utap.tjp2677.antimatter.utils.toDp
+import utap.tjp2677.antimatter.utils.toPx
+import kotlin.math.abs
+import kotlin.math.max
+import kotlin.math.min
+import kotlin.math.sign
 
 
 class ArticleListAdapter(private val mainViewModel: MainViewModel)
     : ListAdapter<Article, ArticleListAdapter.ViewHolder>(Diff()) {
 
-    private var glideOptions = RequestOptions ()
-        .transform(RoundedCorners (20))
+    private var glideOptions = RequestOptions()
+        .fitCenter()
+        .transform(
+            // Todo:  Find a way to do this in XML styles. Inconsistent between devices.
+            RoundedCorners (20.toDp.toInt())
+        )
 
     inner class ViewHolder(val articleBinding: FeedItemBinding) :
         RecyclerView.ViewHolder(articleBinding.root) {
@@ -75,7 +82,6 @@ class ArticleListAdapter(private val mainViewModel: MainViewModel)
 
         override fun areContentsTheSame(oldItem: Article, newItem: Article): Boolean {
             return oldItem.title == newItem.title
-//                    && oldItem.rating == newItem.rating
         }
     }
 }
@@ -83,82 +89,98 @@ class ArticleListAdapter(private val mainViewModel: MainViewModel)
 
 class ArticleItemTouchHelper(context: Context, private val adapter: ArticleListAdapter) : ItemTouchHelper.Callback() {
 
+    /* Resources:
+        - https://stackoverflow.com/questions/44965278/recyclerview-itemtouchhelper-buttons-on-swipe
+        - https://developer.android.com/reference/kotlin/androidx/recyclerview/widget/ItemTouchHelper.Callback#onSwiped(androidx.recyclerview.widget.RecyclerView.ViewHolder,int)
+        - https://www.digitalocean.com/community/tutorials/android-recyclerview-swipe-to-delete-undo
+        - https://developer.android.com/reference/androidx/constraintlayout/motion/widget/OnSwipe#getAutoCompleteMode()
+     */
+
     private var hapticsTriggered = false
     private var reachedMax = false
+    private val buttonWidth = 80.toPx // itemView.width * 1/5f
+    private val buttonBaseColor = com.google.android.material.R.attr.colorPrimarySurface
+    private val buttonLeftColor = Color.HSVToColor(floatArrayOf(94f, 0.4f, 95f))
 
     override fun getMovementFlags(
         recyclerView: RecyclerView,
-        viewHolder: RecyclerView.ViewHolder
+        viewHolder: ViewHolder
     ): Int {
         val swipeFlags = ItemTouchHelper.START or ItemTouchHelper.END
         return makeMovementFlags(0, swipeFlags)
     }
 
-    override fun getSwipeThreshold(viewHolder: RecyclerView.ViewHolder): Float {
-        return (1/5f)
+    override fun getSwipeThreshold(viewHolder: ViewHolder): Float {
+        return (buttonWidth/viewHolder.itemView.width).toFloat()
     }
 
     override fun onMove(recyclerView: RecyclerView,
-                        viewHolder: RecyclerView.ViewHolder,
-                        target: RecyclerView.ViewHolder): Boolean {
+                        viewHolder: ViewHolder,
+                        target: ViewHolder): Boolean {
         return false
     }
 
-    override fun onSwiped(viewHolder: RecyclerView.ViewHolder,
+    override fun onSwiped(viewHolder: ViewHolder,
                           direction: Int) {
         // Code for horizontal swipe.
         Log.d(javaClass.simpleName, "Swipe dir $direction")
         val position = viewHolder.adapterPosition
     }
 
+    override fun getSwipeEscapeVelocity(defaultValue: Float): Float {
+        return 0.1f * defaultValue
+    }
+
+    override fun getSwipeVelocityThreshold(defaultValue: Float): Float {
+        return -1f // Disable (for now)
+    }
+
     override fun onChildDraw(
         c: Canvas,
         recyclerView: RecyclerView,
-        viewHolder: RecyclerView.ViewHolder,
+        viewHolder: ViewHolder,
         dX: Float,
         dY: Float,
         actionState: Int,
         isCurrentlyActive: Boolean
     ) {
-
-        Log.d("THIS", abs(dX).toString())
-
         val view = viewHolder.itemView
-        var xD = dX
+        val swipeThreshold = this.getSwipeThreshold(viewHolder)
+        val maxDX = view.width * swipeThreshold
 
-        if (!isCurrentlyActive) {
-//            recyclerView.setBackgroundColor(Color.TRANSPARENT)
+        if ((!isCurrentlyActive || hapticsTriggered) && abs(dX) < maxDX) {
             hapticsTriggered = false
+        }
 
-            if (reachedMax) {
-                view.x = 0f
-            }
+        if(actionState == ItemTouchHelper.ACTION_STATE_SWIPE) {
 
-        } else if (dX != 0f) {
-
-            val swipeThreshold = this.getSwipeThreshold(viewHolder)
-            val maxDX = view.width * swipeThreshold
-            xD = when(dX >= 0) {
+            val xD = when(dX >= 0) {
                 true -> min(dX, maxDX)
                 false -> max(dX, -maxDX)
             }
 
-            Log.d("HERE", "${abs(dX)} == $maxDX")
-            if (abs(dX) >= maxDX) {
-                if (view.isHapticFeedbackEnabled && !hapticsTriggered) {
-                    // TODO: Try/catch
-                    view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
-                    hapticsTriggered = true
-                    reachedMax = true
-                }
+            Log.d("Displacement Magnitude", "${abs(dX)} (max: $maxDX)")
+
+            if (abs(dX) >= maxDX && view.isHapticFeedbackEnabled && !hapticsTriggered) {
+                // TODO: Try/catch
+                view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                hapticsTriggered = true
+                reachedMax = true
             }
-        }
 
-        super.onChildDraw(c, recyclerView, viewHolder, xD, dY, actionState, isCurrentlyActive)
+            when {
+                dX < 0 -> {
+                    Log.d("SWIPE TO LEFT", dX.toString())
+                    drawIndicatorRight(c, viewHolder)
+                }
+                dX > 0 -> {
+                    Log.d("SWIPE TO RIGHT", dX.toString())
+                    drawIndicatorLeft(c, viewHolder)
+                }
+                else -> c.restore()
+            }
 
-        when (isCurrentlyActive) {
-            true -> drawIndicators(c, viewHolder)
-            else -> c.restore()
+            super.onChildDraw(c, recyclerView, viewHolder, xD, dY, actionState, isCurrentlyActive)
         }
 
     }
@@ -172,43 +194,67 @@ class ArticleItemTouchHelper(context: Context, private val adapter: ArticleListA
         return super.convertToAbsoluteDirection(flags, layoutDirection)
     }
 
-    private fun drawIndicators(c: Canvas, viewHolder: ViewHolder) {
+    private fun drawIndicatorLeft(c: Canvas, viewHolder: ViewHolder) {
         val itemView = viewHolder.itemView
-        val buttonWidth = itemView.width * 1/5f
 
-        val p = Paint()
-        p.color = Color.GREEN
+        val indicator = RectF(
+            itemView.left.toFloat(),
+            itemView.top.toFloat(),
+            (itemView.left + buttonWidth).toFloat(),
+            itemView.bottom.toFloat()
+        )
+        val indicatorPaint = Paint()
+        indicatorPaint.color = buttonBaseColor
+        c.drawRect(indicator, indicatorPaint)
 
-        // Left icon / swipe right -> Save to Read Later
-        val left = itemView.left.toFloat()
-        val top = itemView.top.toFloat()
-        val right = (itemView.left + buttonWidth)
-        val bottom = itemView.bottom.toFloat()
-        val leftButton = RectF(left, top, right, bottom)
-        c.drawRoundRect(leftButton, 32f, 32f, p)
+        // Create icon
         val iconSave = ResourcesCompat.getDrawable(itemView.context.resources, R.drawable.ic_outline_bookmarks_24, null)
         iconSave?.let {
-            val iconLeft = ((buttonWidth - it.intrinsicWidth)/2).toInt()
-            val iconRight = (iconLeft + it.intrinsicWidth)
-            val iconTop = ((itemView.y + it.intrinsicHeight)/2).toInt()
-            val iconBottom = (iconTop + it.intrinsicHeight)
+            val buttonHeight = itemView.bottom - itemView.top
+            val iconHeight = it.intrinsicHeight*1.05
+            val iconWidth = it.intrinsicWidth*1.05
+
+            val iconLeft = (itemView.left + (buttonWidth/2 - iconWidth/2)).toInt()
+            val iconRight = (iconLeft + iconWidth).toInt()
+            val iconTop = (itemView.top + (buttonHeight/2 - iconHeight/2)).toInt()
+            val iconBottom = (iconTop + iconHeight).toInt()
 
             it.setBounds(iconLeft, iconTop, iconRight, iconBottom)
             it.draw(c)
         }
+    }
 
+    private fun drawIndicatorRight(c: Canvas, viewHolder: ViewHolder) {
+        val itemView = viewHolder.itemView
 
+        val p = Paint()
+        p.color = buttonBaseColor
 
-        // Right icon / swipe left -> Mark as read
-        val iconMarkAsRead = ResourcesCompat.getDrawable(itemView.context.resources, R.drawable.ic_outline_bookmarks_24, null)
-        val rightButton = RectF(
+        // Create colored container
+        val indicator = RectF(
             (itemView.right - buttonWidth).toFloat(),
             itemView.top.toFloat(),
             itemView.right.toFloat(),
             itemView.bottom.toFloat()
         )
-        c.drawRoundRect(rightButton, 32f, 32f, p)
+        val indicatorPaint = Paint()
+        indicatorPaint.color = buttonBaseColor
+        c.drawRect(indicator, indicatorPaint)
 
-//        itemView.elevation = 5f
+        // Create icon
+        val iconSave = ResourcesCompat.getDrawable(itemView.context.resources, R.drawable.ic_outline_done_24, null)
+        iconSave?.let {
+            val buttonHeight = itemView.bottom - itemView.top
+            val iconHeight = it.intrinsicHeight*1.05
+            val iconWidth = it.intrinsicWidth*1.05
+
+            val iconTop = (itemView.top + (buttonHeight/2 - iconHeight/2)).toInt()
+            val iconBottom = (iconTop + iconHeight).toInt()
+            val iconRight = (itemView.right - (buttonWidth/2 - iconWidth/2)).toInt()
+            val iconLeft = (iconRight - iconWidth).toInt()
+
+            it.setBounds(iconLeft, iconTop, iconRight, iconBottom)
+            it.draw(c)
+        }
     }
 }

@@ -2,16 +2,18 @@ package utap.tjp2677.antimatter
 
 import android.content.Context
 import android.content.Intent
-import android.os.Bundle
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
+import android.speech.tts.TextToSpeech
+import androidx.lifecycle.*
 import utap.tjp2677.antimatter.ui.article.ArticleActivity
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
+import utap.tjp2677.antimatter.api.FeedlyApi
+import utap.tjp2677.antimatter.api.FeedlyRepository
 import utap.tjp2677.antimatter.ui.settings.SettingsActivity
 
 class MainViewModel : ViewModel() {
+
+    // Initialize the API
+    private val redditApi = FeedlyApi.create()
+    private val feedlyRepository = FeedlyRepository(redditApi)
 
     private var repository = Repository()
     private var articleList = MutableLiveData<List<Article>>()
@@ -25,6 +27,15 @@ class MainViewModel : ViewModel() {
         articleList.apply {
             value = repository.fetchData()
         }
+
+        // Already URL encoded
+//        val entryId = "8IBoZ/4+aoMdAnjTfyUVvn7dmGJHLYw5Dnfigc11Sqg=_184543ca833:30d07de:4fb599db"
+//        val entryId = "8IBoZ%2F4%2BaoMdAnjTfyUVvn7dmGJHLYw5Dnfigc11Sqg%3D_184543ca833%3A30d07de%3A4fb599db"
+//        viewModelScope.launch(context = (viewModelScope.coroutineContext + Dispatchers.IO)) {
+//            val article = feedlyRepository.getPost(entryId)
+//            Log.d(javaClass.simpleName, "Got article $article")
+//
+//        }
     }
 
     fun observeArticles(): LiveData<List<Article>> {
@@ -59,4 +70,28 @@ class MainViewModel : ViewModel() {
             context.startActivity(intent)
         }
     }
+
+//    val articleContent = MutableLiveData<Spannable>()
+//
+//    fun parseArticleContent(content: String, view: TextView) {
+//
+//        class GlideImageGetter(val context: Context) : Html.ImageGetter {
+//            override fun getDrawable(source: String?): Drawable {
+//                Glide.with(context)
+//                    .asBitmap()
+//                    .load(source)
+//                    .placeholder(R.drawable.ic_outline_album_24)
+//                    .submit()
+//
+//                return .drawable
+//            }
+//        }
+//
+//        val imageGetter = MyImageGetter(view.context, view, 300, 300)
+//        viewModelScope.launch(context = (viewModelScope.coroutineContext + Dispatchers.IO)) {
+//            val articleContent = Html.fromHtml(content, Html.FROM_HTML_MODE_LEGACY, imageGetter, null)
+//            acticleContent.postValue
+//        }
+//    }
+
 }

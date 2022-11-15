@@ -11,30 +11,50 @@
     android:paddingTop="16dp"
     android:paddingBottom="8dp">
 
-    <LinearLayout
-        android:id="@+id/publication"
-        android:layout_width="wrap_content"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
         android:layout_marginBottom="12dp">
 
-        <com.google.android.material.imageview.ShapeableImageView
-            android:id="@+id/publication_image"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:layout_marginEnd="6dp"
-            android:src="@drawable/ic_outline_newspaper_24"/>
-
-        <TextView
-            android:id="@+id/publication_name"
+        <LinearLayout
+            android:id="@+id/publication"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/article_publication"
-            android:textAppearance="?attr/textAppearanceSubtitle1"
-            android:textIsSelectable="true"
-            tools:ignore="TouchTargetSizeCheck" />
+            android:orientation="horizontal"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
 
-    </LinearLayout>
+            <com.google.android.material.imageview.ShapeableImageView
+                android:id="@+id/publication_image"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginEnd="6dp"
+                android:src="@drawable/ic_outline_newspaper_24"/>
+
+            <TextView
+                android:id="@+id/publication_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/article_publication"
+                android:textAppearance="?attr/textAppearanceSubtitle1"
+                android:textIsSelectable="true"
+                tools:ignore="TouchTargetSizeCheck" />
+
+        </LinearLayout>
+
+<!--        <TextView-->
+<!--            android:id="@+id/date_published"-->
+<!--            android:text="12/31/1970"-->
+<!--            android:textAppearance="?attr/textAppearanceSubtitle1"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            app:layout_constraintTop_toTopOf="@+id/publication"-->
+<!--            app:layout_constraintBottom_toBottomOf="@+id/publication"-->
+<!--            app:layout_constraintEnd_toEndOf="parent"/>-->
+
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
 
     <TextView
         android:id="@+id/title"
