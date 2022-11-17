@@ -18,19 +18,18 @@ import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.bitmap.RoundedCorners
 import com.bumptech.glide.request.RequestOptions
-import utap.tjp2677.antimatter.Article
 import utap.tjp2677.antimatter.MainViewModel
 import utap.tjp2677.antimatter.R
+import utap.tjp2677.antimatter.authentication.models.Article
 import utap.tjp2677.antimatter.databinding.FeedItemBinding
 import utap.tjp2677.antimatter.utils.toDp
 import utap.tjp2677.antimatter.utils.toPx
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
-import kotlin.math.sign
 
 
-class ArticleListAdapter(private val mainViewModel: MainViewModel)
+class ArticleListAdapter(private val viewModel: MainViewModel, val onClickCallback: (Article) -> Unit)
     : ListAdapter<Article, ArticleListAdapter.ViewHolder>(Diff()) {
 
     private var glideOptions = RequestOptions()
@@ -41,14 +40,7 @@ class ArticleListAdapter(private val mainViewModel: MainViewModel)
         )
 
     inner class ViewHolder(val articleBinding: FeedItemBinding) :
-        RecyclerView.ViewHolder(articleBinding.root) {
-            init {
-                articleBinding.root.setOnClickListener {
-                    val article = mainViewModel.getArticleAt(adapterPosition)
-                    mainViewModel.openArticle(it.context, article)
-                }
-            }
-        }
+        RecyclerView.ViewHolder(articleBinding.root) {}
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val rowBinding = FeedItemBinding.inflate(
@@ -61,8 +53,8 @@ class ArticleListAdapter(private val mainViewModel: MainViewModel)
         val item = getItem(position) ?: return
         val binding = holder.articleBinding
 
-        binding.author.text = item.author.name
-        binding.publication.text = item.publication.name
+        binding.author.text = item.author//.name
+        binding.publication.text = item.publicationName
         binding.title.text = item.title
 
         item.image?.let {
@@ -73,6 +65,10 @@ class ArticleListAdapter(private val mainViewModel: MainViewModel)
                 .into(binding.heroImage)
         }
 
+        binding.root.setOnClickListener {
+            val article = viewModel.getArticleAt(position)
+            onClickCallback(article)
+        }
     }
 
     class Diff : DiffUtil.ItemCallback<Article>() {
@@ -114,17 +110,11 @@ class ArticleItemTouchHelper(context: Context, private val adapter: ArticleListA
         return (buttonWidth/viewHolder.itemView.width).toFloat()
     }
 
-    override fun onMove(recyclerView: RecyclerView,
-                        viewHolder: ViewHolder,
-                        target: ViewHolder): Boolean {
+    override fun onMove(recyclerView: RecyclerView, viewHolder: ViewHolder, target: ViewHolder): Boolean {
         return false
     }
 
-    override fun onSwiped(viewHolder: ViewHolder,
-                          direction: Int) {
-        // Code for horizontal swipe.
-        Log.d(javaClass.simpleName, "Swipe dir $direction")
-        val position = viewHolder.adapterPosition
+    override fun onSwiped(viewHolder: ViewHolder, direction: Int) {
     }
 
     override fun getSwipeEscapeVelocity(defaultValue: Float): Float {

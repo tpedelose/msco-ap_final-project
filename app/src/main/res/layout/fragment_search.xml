@@ -42,6 +42,13 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"/>
 
+        <SearchView
+            android:queryHint="Hello!"
+            android:inputType="text"
+            android:iconifiedByDefault="false"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
     </LinearLayout>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

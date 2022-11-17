@@ -3,39 +3,49 @@ package utap.tjp2677.antimatter
 import android.content.Context
 import android.content.Intent
 import android.speech.tts.TextToSpeech
+import android.util.Log
 import androidx.lifecycle.*
-import utap.tjp2677.antimatter.ui.article.ArticleActivity
-import utap.tjp2677.antimatter.api.FeedlyApi
-import utap.tjp2677.antimatter.api.FeedlyRepository
+import utap.tjp2677.antimatter.authentication.FirestoreAuthLiveData
+import utap.tjp2677.antimatter.authentication.FirestoreHelper
+import utap.tjp2677.antimatter.authentication.models.Article
+import utap.tjp2677.antimatter.authentication.models.Publication
+import utap.tjp2677.antimatter.authentication.models.Collection
 import utap.tjp2677.antimatter.ui.settings.SettingsActivity
+
 
 class MainViewModel : ViewModel() {
 
-    // Initialize the API
-    private val redditApi = FeedlyApi.create()
-    private val feedlyRepository = FeedlyRepository(redditApi)
-
-    private var repository = Repository()
     private var articleList = MutableLiveData<List<Article>>()
-    private var readLaterArticleList = MutableLiveData<List<Article>>()
+    private var articleOpened = MutableLiveData<Article>()
 
-    init {
-        reset()  // Initialize values on instantiation
+    private var userSubscriptions = MutableLiveData<List<Publication>>()
+
+    /* ========================================== */
+    /*                TTS / Player                */
+    /* ========================================== */
+    lateinit var ttsEngine: TextToSpeech
+    private var playerPlaylist = MutableLiveData<List<Publication>>()
+    private var playerCurrentIndex = MutableLiveData<Int>(0)
+
+
+
+    /* ========================================== */
+    /*                  Firebase                  */
+    /* ========================================== */
+    private var firebaseAuthLiveData = FirestoreAuthLiveData()
+    private var firestoreHelper = FirestoreHelper()
+
+    fun updateUser() {
+        firebaseAuthLiveData.updateUser()
     }
 
-    private fun reset() {
-        articleList.apply {
-            value = repository.fetchData()
-        }
 
-        // Already URL encoded
-//        val entryId = "8IBoZ/4+aoMdAnjTfyUVvn7dmGJHLYw5Dnfigc11Sqg=_184543ca833:30d07de:4fb599db"
-//        val entryId = "8IBoZ%2F4%2BaoMdAnjTfyUVvn7dmGJHLYw5Dnfigc11Sqg%3D_184543ca833%3A30d07de%3A4fb599db"
-//        viewModelScope.launch(context = (viewModelScope.coroutineContext + Dispatchers.IO)) {
-//            val article = feedlyRepository.getPost(entryId)
-//            Log.d(javaClass.simpleName, "Got article $article")
-//
-//        }
+    /* ========================================== */
+    /*                  Articles                  */
+    /* ========================================== */
+
+    fun fetchArticles(limit: Int?) {
+        firestoreHelper.fetchArticles(articleList, limit)
     }
 
     fun observeArticles(): LiveData<List<Article>> {
@@ -46,11 +56,80 @@ class MainViewModel : ViewModel() {
         return articleList.value!![position]
     }
 
-
-    // ### Launch Activities ###
-    fun openArticle(context: Context, article: Article) {
-        launchArticleActivity(context, article)
+    fun getOpenedArticle(): Article? {
+        Log.d(javaClass.simpleName, articleOpened.value.toString())
+        return articleOpened.value
     }
+
+    fun setOpenedArticle(article: Article) {
+        articleOpened.postValue(article)
+    }
+
+    fun observeOpenedArticle(): MutableLiveData<Article> {
+        return articleOpened
+    }
+
+    fun addArticleToCollection(article: Article, collection: Collection) {
+
+    }
+
+    fun markArticleAsRead(article: Article) {
+
+    }
+    fun markArticleAsUnread(article: Article) {
+
+    }
+
+
+
+    /* ========================================== */
+    /*                 Collections                */
+    /* ========================================== */
+    private var userCollections = MutableLiveData<List<Collection>>()
+
+    fun fetchCollections() {
+        firestoreHelper.fetchUserCollections(userCollections)
+    }
+
+    fun observeCollections(): LiveData<List<Collection>> {
+        return userCollections
+    }
+
+    fun createCollection() {
+
+    }
+
+    fun readCollection() {
+
+    }
+
+    fun updateCollection() {
+
+    }
+
+    fun deleteCollection() {
+
+    }
+
+
+
+    /* ========================================== */
+    /*                Subscriptions               */
+    /* ========================================== */
+
+    fun fetchSubscriptions() {
+         firestoreHelper.fetchUserSubscriptions(userSubscriptions)
+    }
+
+    fun observeSubscriptions(): LiveData<List<Publication>> {
+        return userSubscriptions
+    }
+
+
+
+    /* ========================================== */
+    /*                   Others                   */
+    /* ========================================== */
 
     fun openSettings(context: Context) {
         launchSettingsActivity(context)
@@ -58,40 +137,11 @@ class MainViewModel : ViewModel() {
 
     // Convenient place to put it as it is shared
     companion object {
-        fun launchArticleActivity(context: Context, article: Article) {
-            // https://stackoverflow.com/questions/47593205/how-to-pass-custom-object-via-intent-in-kotlin
-            val intent = Intent(context, ArticleActivity::class.java)
-                .putExtra(ArticleActivity.articleKey, article as java.io.Serializable)
-            context.startActivity(intent)
-        }
 
         fun launchSettingsActivity(context: Context) {
             val intent = Intent(context, SettingsActivity::class.java)
             context.startActivity(intent)
         }
     }
-
-//    val articleContent = MutableLiveData<Spannable>()
-//
-//    fun parseArticleContent(content: String, view: TextView) {
-//
-//        class GlideImageGetter(val context: Context) : Html.ImageGetter {
-//            override fun getDrawable(source: String?): Drawable {
-//                Glide.with(context)
-//                    .asBitmap()
-//                    .load(source)
-//                    .placeholder(R.drawable.ic_outline_album_24)
-//                    .submit()
-//
-//                return .drawable
-//            }
-//        }
-//
-//        val imageGetter = MyImageGetter(view.context, view, 300, 300)
-//        viewModelScope.launch(context = (viewModelScope.coroutineContext + Dispatchers.IO)) {
-//            val articleContent = Html.fromHtml(content, Html.FROM_HTML_MODE_LEGACY, imageGetter, null)
-//            acticleContent.postValue
-//        }
-//    }
 
 }

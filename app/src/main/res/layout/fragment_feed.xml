@@ -7,6 +7,7 @@
     android:layout_height="match_parent"
     tools:context=".ui.feed.FeedFragment">
 
+    <!--  Header  -->
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/titlebar"
         android:layout_width="match_parent"
@@ -31,13 +32,21 @@
 
     </com.google.android.material.appbar.AppBarLayout>
 
-    <androidx.recyclerview.widget.RecyclerView
+    <!--  Content  -->
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/refresh"
         app:layout_behavior="@string/appbar_scrolling_view_behavior"
-        android:id="@+id/feed_list"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-        tools:listitem="@layout/feed_item" />
+        android:layout_height="wrap_content">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/feed_list"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+            tools:listitem="@layout/feed_item" />
+
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
 

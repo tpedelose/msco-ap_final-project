@@ -6,7 +6,11 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:hapticFeedbackEnabled="true"
-    android:background="?attr/colorSurface">
+    android:background="?attr/colorSurface"
+    android:paddingBottom="16dp"
+    android:foreground="?android:attr/selectableItemBackground"
+    android:transitionName="shared_element_container"
+    android:clickable="true">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -18,12 +22,13 @@
         app:layout_constraintEnd_toEndOf="parent" >
 
         <com.google.android.material.imageview.ShapeableImageView
+            app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Small"
             android:id="@+id/heroImage"
             android:layout_width="56dp"
             android:layout_height="56dp"
             android:layout_marginTop="20dp"
             android:layout_marginStart="12dp"
-            android:layout_marginEnd="8dp"
+            android:layout_marginEnd="6dp"
             android:scaleType="centerCrop"
             android:contentDescription="TODO" />
 
@@ -33,9 +38,8 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:paddingTop="16dp"
-            android:paddingBottom="16dp"
-            android:paddingLeft="8dp"
-            android:paddingRight="8dp">
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp">
 
             <!--  Title  -->
             <TextView

@@ -9,7 +9,18 @@
         android:id="@+id/navigation_feed"
         android:name="utap.tjp2677.antimatter.ui.feed.FeedFragment"
         android:label="@string/title_feed"
-        tools:layout="@layout/fragment_feed" />
+        tools:layout="@layout/fragment_feed" >
+        <action
+            android:id="@+id/action_navigation_feed_to_navigation_collections"
+            app:destination="@id/navigation_collections" />
+        <action
+            android:id="@+id/action_navigation_feed_to_navigation_search"
+            app:destination="@id/navigation_search" />
+        <action
+            android:id="@+id/navigate_to_article_detail"
+            app:destination="@id/article_view" />
+
+    </fragment>
 
     <fragment
         android:id="@+id/navigation_collections"
@@ -22,5 +33,16 @@
         android:name="utap.tjp2677.antimatter.ui.search.SearchFragment"
         android:label="@string/title_search"
         tools:layout="@layout/fragment_search" />
+
+    <fragment
+        android:id="@+id/article_view"
+        android:name="utap.tjp2677.antimatter.ui.article.ArticleFragment"
+        android:label="Article Detail"
+        tools:layout="@layout/fragment_article" >
+        <argument
+            android:name="article"
+            app:argType="integer" />
+    </fragment>
+
 
 </navigation>

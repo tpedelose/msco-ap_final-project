@@ -1,4 +1,6 @@
-<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
+<PreferenceScreen
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <PreferenceCategory app:title="Personalization">
         <ListPreference
@@ -13,7 +15,8 @@
         <SwitchPreferenceCompat
             app:icon="@drawable/ic_outline_vibration_24"
             app:key="haptics"
-            app:title="Enable haptics" />
+            app:title="Enable haptics"
+            />
 
     </PreferenceCategory>
 

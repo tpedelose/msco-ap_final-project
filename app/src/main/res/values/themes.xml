@@ -9,7 +9,14 @@
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:enforceNavigationBarContrast">false</item>
         <item name="android:enforceStatusBarContrast">false</item>
+        <item name="switchStyle">?attr/materialSwitchStyle</item>
     </style>
 
     <style name="Theme.AntiMatter" parent="Base.Theme.AntiMatter" />
+
+<!--    <style name="App.Switches" parent="Widget.Material3.CompoundButton.Switch">-->
+<!--        <item name="track">?attr/materialSwitchStyle</item>-->
+<!--        <item name="android:thumb">@drawable/switch_thumb</item>-->
+<!--    </style>-->
+
 </resources>
