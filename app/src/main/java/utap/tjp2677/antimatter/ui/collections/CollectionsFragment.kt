@@ -7,15 +7,19 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.GridLayoutManager.SpanSizeLookup
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.divider.MaterialDividerItemDecoration
+import utap.tjp2677.antimatter.MainActivity
 import utap.tjp2677.antimatter.MainViewModel
+import utap.tjp2677.antimatter.R
 import utap.tjp2677.antimatter.databinding.FragmentCollectionsBinding
 import utap.tjp2677.antimatter.ui.lists.CollectionListAdapter
 import utap.tjp2677.antimatter.ui.lists.FollowListAdapter
 import utap.tjp2677.antimatter.utils.toPx
+
 
 class CollectionsFragment : Fragment() {
 
@@ -87,9 +91,14 @@ class CollectionsFragment : Fragment() {
 
     private fun initCollectionsRecyclerView() {
         val rv = binding.collectionList
-        collectionListAdapter = CollectionListAdapter(viewModel) {}
+
+        // Content
+        collectionListAdapter = CollectionListAdapter(viewModel) {
+            findNavController().navigate(R.id.action_navigation_collections_to_collectionViewFragment)
+        }
         rv.adapter = collectionListAdapter
 
+        // Style
         val dividerThickness = 6.toPx.toInt()
 
         // Make first element larger than the others
@@ -121,5 +130,4 @@ class CollectionsFragment : Fragment() {
             rv.addItemDecoration(divider)
         }
     }
-
 }

@@ -5,7 +5,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.commit
 import androidx.preference.PreferenceFragmentCompat
 import utap.tjp2677.antimatter.R
-import utap.tjp2677.antimatter.databinding.ActivityArticleBinding
 import utap.tjp2677.antimatter.databinding.SettingsActivityBinding
 
 class SettingsActivity : AppCompatActivity() {

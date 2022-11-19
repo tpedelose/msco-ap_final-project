@@ -4,6 +4,7 @@ import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentId
 import com.google.firebase.firestore.ServerTimestamp
 import com.google.firebase.firestore.DocumentReference
+import com.google.firebase.firestore.PropertyName
 
 data class Article(
     // IDs
@@ -18,7 +19,13 @@ data class Article(
     var image: String? = null,
 
     // User related data
-    var read: Boolean = false,
+    @get:PropertyName("isRead") // Well this is annoying... https://medium.com/@eeddeellee/boolean-fields-that-start-with-is-in-firebase-firestore-49afb65e3639
+    @set:PropertyName("isRead")
+    var isRead: Boolean = false,
+
+    @get:PropertyName("is_saved_for_later")
+    @set:PropertyName("is_saved_for_later")
+    var isSavedForLater: Boolean = false,
 
     // Publication
     var publication: DocumentReference? = null,
@@ -30,4 +37,7 @@ data class Article(
     var published: Timestamp? = null,
     @ServerTimestamp
     var updated:  Timestamp? = null,
-)
+) {
+    // Local only data
+//    var isReadNetworkState = false
+}

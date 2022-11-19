@@ -1,6 +1,11 @@
 package utap.tjp2677.antimatter.ui.article
 
+import android.content.Intent
 import android.graphics.Color
+import android.graphics.RenderEffect
+import android.graphics.Shader
+import android.graphics.drawable.Drawable
+import android.net.Uri
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.text.Html
@@ -12,15 +17,20 @@ import android.util.Log
 import android.view.*
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.text.parseAsHtml
+import androidx.core.view.MenuProvider
 import androidx.core.view.setPadding
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.Lifecycle
+import androidx.navigation.fragment.findNavController
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.bitmap.RoundedCorners
 import com.bumptech.glide.request.RequestOptions
 import com.google.android.material.color.MaterialColors
-import com.google.android.material.transition.MaterialContainerTransform
 import org.jsoup.Jsoup
 import org.jsoup.safety.Whitelist
 import utap.tjp2677.antimatter.MainViewModel
@@ -41,6 +51,7 @@ class ArticleFragment : Fragment() {
     private val binding get() = _binding!!  // This property is only valid between onCreateView and onDestroyView.
     private val viewModel: MainViewModel by activityViewModels()
 
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -53,7 +64,7 @@ class ArticleFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        sharedElementEnterTransition = MaterialContainerTransform()
+        initMenuProvider()
 
         // Interactions
         binding.content.movementMethod = LinkMovementMethod.getInstance()
@@ -64,8 +75,34 @@ class ArticleFragment : Fragment() {
             loadArticle(it)
         }
 
+        viewModel.observeIsPlayingStatus().observe(viewLifecycleOwner) { isPlaying ->
+            when (isPlaying && viewModel.openArticleIsLoaded()) {
+                true -> {
+                    binding.header.playArticle.text = "Pause"
+                    binding.header.playArticle.setIconResource(R.drawable.ic_outline_pause_24)
+                }
+                false -> {
+                    binding.header.playArticle.text = "Listen"
+                    binding.header.playArticle.setIconResource(R.drawable.ic_outline_play_arrow_24)
+                }
+            }
+        }
+
         // Listeners
-        binding.header.playArticle.setOnClickListener { playArticle() }
+        binding.bottomAppBar.setNavigationOnClickListener {
+            findNavController().popBackStack()
+        }
+
+        binding.header.playArticle.setOnClickListener {
+            if (viewModel.getIsPlayingStatus() && viewModel.openArticleIsLoaded()) {
+                viewModel.stopPlaying()
+            } else {
+                viewModel.getOpenedArticle()?.let {
+                    viewModel.setNowPlaying(it)
+                    playArticle()
+                }
+            }
+        }
     }
 
     override fun onDestroyView() {
@@ -102,6 +139,30 @@ class ArticleFragment : Fragment() {
         binding.header.readTime.text = "$readTime min"
     }
 
+    private fun initMenuProvider () {
+        binding.bottomAppBar.addMenuProvider(
+            object : MenuProvider {
+                override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
+//                    menuInflater.inflate(R.menu.bottom_app_bar_article, menu)
+                }
+
+                override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
+                    return when (menuItem.itemId) {
+                        R.id.add -> {true}  // TODO: Handle favorite icon press
+                        R.id.more -> {true}  // TODO: Handle more item (inside overflow menu) press
+                        R.id.open_in_browser -> {
+                            // Handle open in browser
+                            val article = viewModel.getOpenedArticle()
+                            Log.d("URL", "${article?.link}")
+                            article?.link?.let { url: String -> openWebPage(url) }
+                            true
+                        }
+                        else -> false
+                    }
+                }
+            }, viewLifecycleOwner, Lifecycle.State.RESUMED)
+    }
+
     private fun glideFetch(url: String?, imageView: ImageView) {
         val glideOptions = RequestOptions()
             .fitCenter()
@@ -136,27 +197,38 @@ class ArticleFragment : Fragment() {
                 attributionText = "From ${it.publicationName}"
             }
 
-            viewModel.ttsEngine.speak(attributionText, TextToSpeech.QUEUE_ADD, null, "tts-attribution")
+            viewModel.ttsEngine.speak(attributionText, TextToSpeech.QUEUE_FLUSH, null, "tts-attribution")
             viewModel.ttsEngine.playSilentUtterance(500, TextToSpeech.QUEUE_ADD, "tts-pause")
 
             // Add article content
 //            val textLenMax = TextToSpeech.getMaxSpeechInputLength()
             //TODO: Split text into smaller chunks. By sentence?
             val contentText = Jsoup.clean(article.content, Whitelist.basic()).parseAsHtml().toString()
-
-            contentText.splitToSequence("\n").forEachIndexed { i, text ->
-                if (text.isNotBlank()) {
-                    viewModel.ttsEngine.speak(text, TextToSpeech.QUEUE_ADD, null, "tts-content$i")
-                    viewModel.ttsEngine.playSilentUtterance(100, TextToSpeech.QUEUE_ADD, "tts-content$i pause")
+            contentText.isNotBlank().let {
+                viewModel.setIsPlayingStatus(true)
+                contentText.splitToSequence("\n").forEachIndexed { i, text ->
+                    if (text.isNotBlank()) {
+                        viewModel.ttsEngine.speak(text, TextToSpeech.QUEUE_ADD, null, "tts-content$i")
+                        viewModel.ttsEngine.playSilentUtterance(100, TextToSpeech.QUEUE_ADD, "tts-content$i pause")
+                    }
                 }
             }
+
         }
     }
 
-    class SelectionCallback(textView: TextView) : ActionMode.Callback {
+    private fun openWebPage(url: String) {
+        val webpage: Uri = Uri.parse(url)
+        val intent = Intent(Intent.ACTION_VIEW, webpage)
+        if (activity?.let { intent.resolveActivity(it.packageManager) } != null) {
+            startActivity(intent)
+        } else {
+            Toast.makeText(this.context, "No browsers installed", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    class SelectionCallback(var textView: TextView) : ActionMode.Callback {
         // https://stackoverflow.com/questions/12995439/custom-cut-copy-action-bar-for-edittext-that-shows-text-selection-handles/13004720#13004720
-        private val TAG = "TextSelectionCallback"
-        private val selectedTextView = textView
 
         override fun onCreateActionMode(p0: ActionMode?, p1: Menu?): Boolean {
             p0!!.menuInflater.inflate(R.menu.acticle_text_selection, p1)
@@ -170,19 +242,19 @@ class ArticleFragment : Fragment() {
         }
 
         override fun onActionItemClicked(p0: ActionMode?, p1: MenuItem?): Boolean {
-            Log.d(TAG, "onActionItemClicked item=${p1.toString()}/${p1?.itemId}")
+            Log.d("TextSelectionCallback", "onActionItemClicked item=${p1.toString()}/${p1?.itemId}")
 
-            val start: Int = selectedTextView.selectionStart
-            val end: Int = selectedTextView.selectionEnd
+            val start: Int = textView.selectionStart
+            val end: Int = textView.selectionEnd
 
             return when (p1?.itemId) {
-                utap.tjp2677.antimatter.R.id.highlight -> {
-                    val textToHighlight = selectedTextView.text as Spannable
+                R.id.highlight -> {
+                    val textToHighlight = textView.text as Spannable
                     val highlightColor = MaterialColors.getColor(
-                        selectedTextView.context, com.google.android.material.R.attr.colorPrimaryContainer, Color.YELLOW)
+                        textView.context, com.google.android.material.R.attr.colorPrimaryContainer, Color.YELLOW)
 
                     textToHighlight.setSpan(BackgroundColorSpan(highlightColor), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-                    selectedTextView.text = textToHighlight
+                    textView.text = textToHighlight
                     true
                 }
                 else -> false

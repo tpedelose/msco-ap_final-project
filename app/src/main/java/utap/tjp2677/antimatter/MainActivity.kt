@@ -7,16 +7,13 @@ import android.util.Log
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.fragment.app.FragmentTransaction
-import androidx.fragment.app.commit
+import androidx.core.view.isGone
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.google.android.material.elevation.SurfaceColors
 import utap.tjp2677.antimatter.authentication.AuthInit
-import utap.tjp2677.antimatter.authentication.models.Article
 import utap.tjp2677.antimatter.databinding.ActivityMainBinding
-import utap.tjp2677.antimatter.ui.article.ArticleFragment
-import utap.tjp2677.antimatter.ui.article.ArticleToolbarFragment
 
 
 class MainActivity : AppCompatActivity() {
@@ -30,12 +27,19 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        val color = SurfaceColors.SURFACE_2.getColor(this)
+        window.navigationBarColor = color
+        window.statusBarColor = color
+
         if (savedInstanceState == null) {
             // Authentication
             AuthInit(viewModel, signInLauncher)
 
             // Draw behind navigation and status bars
             window.setDecorFitsSystemWindows(false)
+
+            // Start with articles
+            viewModel.fetchArticles(limit=10)
 
             // Initialize TTS Engine
             // TODO:  Make a class to handle player
@@ -52,6 +56,13 @@ class MainActivity : AppCompatActivity() {
         val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment_activity_main) as NavHostFragment
         val navController = navHostFragment.navController
         navView.setupWithNavController(navController)
+        navView.setOnApplyWindowInsetsListener(null)
+
+        // ♥ this:  https://developer.android.com/guide/navigation/navigation-ui#argument
+        // Todo? Animation:  https://stackoverflow.com/questions/54087740/how-to-hide-bottomnavigationview-on-android-navigation-lib
+        navController.addOnDestinationChangedListener { _, _, arguments ->
+            navView.isGone = arguments?.getBoolean("HideAppBar", false) == true
+        }
 //        navView.minimumHeight = 176
     }
 
@@ -62,16 +73,6 @@ class MainActivity : AppCompatActivity() {
 //            if (status == TextToSpeech.SUCCESS) {
 //                .language = textToSpeechEngine.defaultVoice.locale
 //            }
-        }
-    }
-
-    fun navigateToArticleDetail(article: Article) {
-        viewModel.setOpenedArticle(article)
-        supportFragmentManager.commit {
-            replace(R.id.nav_view, ArticleToolbarFragment(), "OpenArticleToolbar")
-            replace(R.id.nav_host_fragment_activity_main, ArticleFragment(), "OpenArticle")
-            setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
-            addToBackStack("OpenArticle")
         }
     }
 

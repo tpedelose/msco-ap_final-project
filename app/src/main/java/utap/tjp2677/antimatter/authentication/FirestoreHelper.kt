@@ -2,12 +2,7 @@ package utap.tjp2677.antimatter.authentication
 
 import android.util.Log
 import androidx.lifecycle.MutableLiveData
-import com.google.firebase.firestore.DocumentReference
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.FirebaseFirestoreSettings
-import com.google.firebase.firestore.Query
-import com.google.firebase.firestore.QuerySnapshot
-import com.google.firebase.firestore.Source
+import com.google.firebase.firestore.*
 import com.google.firebase.firestore.ktx.firestoreSettings
 import utap.tjp2677.antimatter.authentication.models.Article
 import utap.tjp2677.antimatter.authentication.models.Publication
@@ -17,6 +12,20 @@ import kotlin.math.min
 const val FETCH_DEFAULT = 20
 const val FETCH_LIMIT = 100
 
+
+// Extension to deal with malformed documents by rejecting them
+fun <T> DocumentSnapshot.toObjectOrNull(dataclass: Class<T>): T? {
+    return try {
+        this.toObject(dataclass)
+    } catch (e: java.lang.RuntimeException) {
+        null
+    }
+}
+
+/*  TODO:  Reduce reads
+ *     https://medium.com/firebase-tips-tricks/how-to-drastically-reduce-the-number-of-reads-when-no-documents-are-changed-in-firestore-8760e2f25e9e
+ */
+
 class FirestoreHelper() {
 
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance().apply {
@@ -24,7 +33,8 @@ class FirestoreHelper() {
             isPersistenceEnabled = true
         }
     }
-    private val collectionRoot = "articles"
+    private val DEFAULT_ORDERING = Query.Direction.DESCENDING
+
 
     /////////////////////////////////////////////////////////////
     // Interact with Firestore db
@@ -35,53 +45,59 @@ class FirestoreHelper() {
     // But be careful about how listener updates live data
     // and noteListener?.remove() in onCleared
 
-    fun fetchArticles(articleList: MutableLiveData<List<Article>>, limit: Int? = FETCH_DEFAULT) {
-        // TODO: https://medium.com/firebase-tips-tricks/how-to-drastically-reduce-the-number-of-reads-when-no-documents-are-changed-in-firestore-8760e2f25e9e
+    /* ========================================== */
+    /*                  Articles                  */
+    /* ========================================== */
 
-        var _limit = when(limit) {
+    fun listenForArticles(articleList: MutableLiveData<List<Article>>) {
+        TODO()
+    }
+
+    fun fetchArticles(articleList: MutableLiveData<List<Article>>, limit: Int?, start: Int, end: Int) {
+
+        // TODO!!!  Pagination, Order, Filter
+        val ordering = DEFAULT_ORDERING
+
+        val _limit = when(limit) {
             null -> FETCH_DEFAULT
             else -> min(limit, FETCH_LIMIT)
         }.toLong()
 
-        val collectionRef = db.collection(collectionRoot)
+        val collectionRef = db.collection("articles")
 
-        val mainQuery = collectionRef
-            .orderBy("published", Query.Direction.DESCENDING)
+        collectionRef
+            .whereEqualTo("isRead", false)  // Todo: allow this to be passed in
+            .orderBy("published", ordering)
             .limit(_limit)
-
-        mainQuery.get(Source.SERVER)
+            .get()
             .addOnSuccessListener { result ->
                 articleList.postValue(
                     result.documents.mapNotNull {
-                        it.toObject(Article::class.java)
+                        it.toObjectOrNull(Article::class.java)
                     }
                 )
             }
     }
 
-    fun fetchPublication() {
-
-    }
-
-    fun fetchUserSubscriptions(subscriptionList: MutableLiveData<List<Publication>>) {
-        val collectionRef = db.collection("publications")
+    fun setArticleReadState(articleId: String, isRead: Boolean, onSuccessCallback: () -> Unit) {
+        val collectionRef = db.collection("articles")
 
         collectionRef
-            .orderBy("updated", Query.Direction.DESCENDING)
-            .get()
-            .addOnSuccessListener { result ->
-                subscriptionList.postValue(
-                    result.documents.mapNotNull { result ->
-                        result.toObject(Publication::class.java)
-                    }
-                )
-            }
-            .addOnFailureListener {
-                Log.d(javaClass.simpleName, "Utter failure")
+            .document(articleId)
+            .update(
+                mapOf("isRead" to isRead)
+            )
+            .addOnSuccessListener {
+                onSuccessCallback()
             }
     }
 
-    fun fetchUserCollections(collectionList: MutableLiveData<List<Collection>>) {
+
+    /* ========================================== */
+    /*                 Collections                */
+    /* ========================================== */
+
+    fun fetchCollections(collectionList: MutableLiveData<List<Collection>>) {
         val collectionRef = db.collection("collections")
 
         collectionRef
@@ -89,8 +105,8 @@ class FirestoreHelper() {
             .get()
             .addOnSuccessListener { result ->
                 collectionList.postValue(
-                    result.documents.mapNotNull { result ->
-                        result.toObject(Collection::class.java)
+                    result.documents.mapNotNull {
+                        it.toObjectOrNull(Collection::class.java)
                     }
                 )
             }
@@ -99,9 +115,54 @@ class FirestoreHelper() {
             }
     }
 
-    fun fetchUserReadLater() {
+    fun fetchCollectionArticles(articleList: MutableLiveData<List<Article>>) {
 
     }
+
+    fun addArticleToCollection(articleId: String, collectionId: String) {
+        val collectionRef = db.collection("collections")
+
+        collectionRef
+//            .orderBy("published", ordering)
+//            .limit(_limit)
+//            .get(Source.SERVER)
+//            .addOnSuccessListener { result ->
+//                articleList.postValue(
+//                    result.documents.mapNotNull {
+//                        it.toObjectOrNull(Article::class.java)
+//                    }
+//                )
+//            }
+    }
+
+    fun removeArticleFromCollection(articleId: String, collectionId: String) {
+
+    }
+
+
+    /* ========================================== */
+    /*                Subscriptions               */
+    /* ========================================== */
+
+    fun fetchSubscriptions(subscriptionList: MutableLiveData<List<Publication>>) {
+        val collectionRef = db.collection("publications")
+
+        collectionRef
+            .orderBy("updated", Query.Direction.DESCENDING)
+            .get()
+            .addOnSuccessListener { result ->
+                subscriptionList.postValue(
+                    result.documents.mapNotNull {
+                        it.toObjectOrNull(Publication::class.java)
+                    }
+                )
+            }
+            .addOnFailureListener {
+                Log.d(javaClass.simpleName, "Utter failure")
+            }
+    }
+
+
 
     fun Query.getCacheBeforeServer() {
         TODO()

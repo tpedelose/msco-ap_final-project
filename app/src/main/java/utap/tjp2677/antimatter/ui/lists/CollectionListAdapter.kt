@@ -3,7 +3,6 @@ package utap.tjp2677.antimatter.ui.lists
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import android.widget.ImageView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -37,6 +36,12 @@ class CollectionListAdapter(private val viewModel: MainViewModel, val onClickCal
             // Change text style
             val style = com.google.android.material.R.style.TextAppearance_M3_Sys_Typescale_TitleLarge
             binding.title.setTextAppearance(style)
+        }
+
+        // Click listeners
+        binding.root.setOnClickListener {
+            val collection = viewModel.getCollectionAt(position)
+            onClickCallback(collection)
         }
     }
 

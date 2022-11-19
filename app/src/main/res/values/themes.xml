@@ -5,10 +5,7 @@
         <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
 
         <!-- https://medium.com/androiddevelopers/gesture-navigation-going-edge-to-edge-812f62e4e83e -->
-        <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
-        <item name="android:enforceNavigationBarContrast">false</item>
-        <item name="android:enforceStatusBarContrast">false</item>
         <item name="switchStyle">?attr/materialSwitchStyle</item>
     </style>
 

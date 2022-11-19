@@ -1,43 +1,34 @@
 package utap.tjp2677.antimatter.ui.lists
 
-import android.content.Context
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Paint
-import android.graphics.RectF
+import android.content.res.Resources.Theme
+import android.graphics.*
 import android.util.Log
+import android.util.TypedValue
 import android.view.HapticFeedbackConstants
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.annotation.ColorInt
 import androidx.core.content.res.ResourcesCompat
+import androidx.core.graphics.BlendModeColorFilterCompat
+import androidx.core.graphics.BlendModeCompat
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import com.bumptech.glide.Glide
-import com.bumptech.glide.load.resource.bitmap.RoundedCorners
-import com.bumptech.glide.request.RequestOptions
-import utap.tjp2677.antimatter.MainViewModel
+import com.google.android.material.color.MaterialColors
 import utap.tjp2677.antimatter.R
 import utap.tjp2677.antimatter.authentication.models.Article
 import utap.tjp2677.antimatter.databinding.FeedItemBinding
-import utap.tjp2677.antimatter.utils.toDp
 import utap.tjp2677.antimatter.utils.toPx
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 
 
-class ArticleListAdapter(private val viewModel: MainViewModel, val onClickCallback: (Article) -> Unit)
+open class ArticleListAdapter(val onClickCallback: (Int) -> Unit)
     : ListAdapter<Article, ArticleListAdapter.ViewHolder>(Diff()) {
-
-    private var glideOptions = RequestOptions()
-        .fitCenter()
-        .transform(
-            // Todo:  Find a way to do this in XML styles. Inconsistent between devices.
-            RoundedCorners (20.toDp.toInt())
-        )
 
     inner class ViewHolder(val articleBinding: FeedItemBinding) :
         RecyclerView.ViewHolder(articleBinding.root) {}
@@ -53,7 +44,7 @@ class ArticleListAdapter(private val viewModel: MainViewModel, val onClickCallba
         val item = getItem(position) ?: return
         val binding = holder.articleBinding
 
-        binding.author.text = item.author//.name
+        binding.author.text = item.author
         binding.publication.text = item.publicationName
         binding.title.text = item.title
 
@@ -61,14 +52,33 @@ class ArticleListAdapter(private val viewModel: MainViewModel, val onClickCallba
             Glide.with(binding.root.context)
                 .asBitmap() // Try to display animated Gifs and video still
                 .load(it)
-                .apply(glideOptions)
+                .fitCenter()
                 .into(binding.heroImage)
         }
 
         binding.root.setOnClickListener {
-            val article = viewModel.getArticleAt(position)
-            onClickCallback(article)
+            onClickCallback(position)
         }
+
+        /*  Handle Read Status  */
+        // Dealing with colors in Kotlin:  https://material.io/blog/android-material-theme-color#:~:text=MaterialColors%C2%A0utility%20class
+
+        val titleTextColor = when (item.isRead) {
+            true -> MaterialColors.getColor(binding.root, android.R.attr.textColorHint)
+            false -> MaterialColors.getColor(binding.root, android.R.attr.textColorPrimary)
+        }
+        binding.title.setTextColor(titleTextColor)
+
+        val secondaryTextColor = when (item.isRead) {
+            true -> MaterialColors.getColor(binding.root, android.R.attr.textColorHint)
+            false -> MaterialColors.getColor(binding.root, android.R.attr.textColorSecondary)
+        }
+        // Todo:  combine author + publication
+        binding.author.setTextColor(secondaryTextColor)
+        binding.publication.setTextColor(secondaryTextColor)
+
+        /*  Handle Read Later Status  */
+
     }
 
     class Diff : DiffUtil.ItemCallback<Article>() {
@@ -83,26 +93,37 @@ class ArticleListAdapter(private val viewModel: MainViewModel, val onClickCallba
 }
 
 
-class ArticleItemTouchHelper(context: Context, private val adapter: ArticleListAdapter) : ItemTouchHelper.Callback() {
+class ItemTouchHelperOverride(callback: Callback) : ItemTouchHelper(callback) {
 
+}
+
+open class ArticleItemTouchHelper(
+    private val adapter: ArticleListAdapter,
+    val onSwipeToStart: (Int) -> Unit,
+    val onSwipeToEnd: (Int) -> Unit) : ItemTouchHelper.Callback()
+{
     /* Resources:
         - https://stackoverflow.com/questions/44965278/recyclerview-itemtouchhelper-buttons-on-swipe
         - https://developer.android.com/reference/kotlin/androidx/recyclerview/widget/ItemTouchHelper.Callback#onSwiped(androidx.recyclerview.widget.RecyclerView.ViewHolder,int)
         - https://www.digitalocean.com/community/tutorials/android-recyclerview-swipe-to-delete-undo
         - https://developer.android.com/reference/androidx/constraintlayout/motion/widget/OnSwipe#getAutoCompleteMode()
+        - https://codeburst.io/android-swipe-menu-with-recyclerview-8f28a235ff28
      */
 
     private var hapticsTriggered = false
     private var reachedMax = false
     private val buttonWidth = 80.toPx // itemView.width * 1/5f
-    private val buttonBaseColor = com.google.android.material.R.attr.colorPrimarySurface
-    private val buttonLeftColor = Color.HSVToColor(floatArrayOf(94f, 0.4f, 95f))
+    private val buttonBaseColor = com.google.android.material.R.attr.colorSurfaceVariant //com.google.android.material.R.attr.colorOnSurfaceVariant
+    private val textBaseColor = com.google.android.material.R.attr.colorOnSurfaceVariant // Color.WHITE
+    private val buttonActivatedColor = Color.HSVToColor(floatArrayOf(92f, 0.18f, 0.88f))
+    private val textActivatedColor = com.google.android.material.R.attr.colorOnSurfaceInverse
+
 
     override fun getMovementFlags(
         recyclerView: RecyclerView,
         viewHolder: ViewHolder
     ): Int {
-        val swipeFlags = ItemTouchHelper.START or ItemTouchHelper.END
+        val swipeFlags: Int = ItemTouchHelper.START or ItemTouchHelper.END
         return makeMovementFlags(0, swipeFlags)
     }
 
@@ -115,14 +136,41 @@ class ArticleItemTouchHelper(context: Context, private val adapter: ArticleListA
     }
 
     override fun onSwiped(viewHolder: ViewHolder, direction: Int) {
+        Log.d("SWIPED YA!", "$direction")
+
+        when (direction) {
+            ItemTouchHelper.START -> {
+                onSwipeToStart(viewHolder.absoluteAdapterPosition)
+            }
+            ItemTouchHelper.END -> {
+                onSwipeToEnd(viewHolder.absoluteAdapterPosition)
+            }
+        }
+
+        /*  Animation debugging:
+        *   - https://stackoverflow.com/questions/42379660/how-to-prevent-recyclerview-item-from-blinking-after-notifyitemchangedpos
+        *   - Try this?  https://stackoverflow.com/a/71153427/17370202
+        *   - https://stackoverflow.com/questions/31787272/android-recyclerview-itemtouchhelper-revert-swipe-and-restore-view-holder/
+        *   Maybe do this in onDraw? onDrawOver?
+        */
+
+        // start the inverse animation and reset the internal swipe state AFTERWARDS
+        viewHolder.itemView
+            .animate()
+            .translationX(0f)
+            .withEndAction {
+//                 adapter.notifyItemChanged(viewHolder.absoluteAdapterPosition)  // Plays animations...
+                adapter.notifyDataSetChanged()  // Inefficient, but no animation
+            }
+            .start()
     }
 
     override fun getSwipeEscapeVelocity(defaultValue: Float): Float {
-        return 0.1f * defaultValue
+        return defaultValue
     }
 
     override fun getSwipeVelocityThreshold(defaultValue: Float): Float {
-        return -1f // Disable (for now)
+        return defaultValue
     }
 
     override fun onChildDraw(
@@ -140,16 +188,19 @@ class ArticleItemTouchHelper(context: Context, private val adapter: ArticleListA
 
         if ((!isCurrentlyActive || hapticsTriggered) && abs(dX) < maxDX) {
             hapticsTriggered = false
+            reachedMax = false
         }
 
-        if(actionState == ItemTouchHelper.ACTION_STATE_SWIPE) {
+        var xD = dX
 
-            val xD = when(dX >= 0) {
+        if (actionState == ItemTouchHelper.ACTION_STATE_SWIPE) {
+
+            xD = when(dX >= 0) {
                 true -> min(dX, maxDX)
                 false -> max(dX, -maxDX)
             }
 
-            Log.d("Displacement Magnitude", "${abs(dX)} (max: $maxDX)")
+//            Log.d("Displacement Magnitude", "${abs(dX)} (max: $maxDX)")
 
             if (abs(dX) >= maxDX && view.isHapticFeedbackEnabled && !hapticsTriggered) {
                 // TODO: Try/catch
@@ -157,93 +208,96 @@ class ArticleItemTouchHelper(context: Context, private val adapter: ArticleListA
                 hapticsTriggered = true
                 reachedMax = true
             }
+        }
 
-            when {
-                dX < 0 -> {
-                    Log.d("SWIPE TO LEFT", dX.toString())
-                    drawIndicatorRight(c, viewHolder)
-                }
-                dX > 0 -> {
-                    Log.d("SWIPE TO RIGHT", dX.toString())
-                    drawIndicatorLeft(c, viewHolder)
-                }
-                else -> c.restore()
+        when {
+            dX < 0 -> {
+                Log.d("SWIPE TO START", dX.toString())
+                drawIndicator(c, viewHolder, ItemTouchHelper.START)
             }
-
-            super.onChildDraw(c, recyclerView, viewHolder, xD, dY, actionState, isCurrentlyActive)
+            dX > 0 -> {
+                Log.d("SWIPE TO END", dX.toString())
+                drawIndicator(c, viewHolder, ItemTouchHelper.END)
+            }
+            else -> c.restore()
         }
 
+        super.onChildDraw(c, recyclerView, viewHolder, xD, dY, actionState, isCurrentlyActive)
     }
 
-    override fun convertToAbsoluteDirection(flags: Int, layoutDirection: Int): Int {
-        // https://codeburst.io/android-swipe-menu-with-recyclerview-8f28a235ff28
-        if (reachedMax) {
-            reachedMax = false
-            return 0
-        }
-        return super.convertToAbsoluteDirection(flags, layoutDirection)
-    }
+    private fun drawIndicator(c: Canvas, viewHolder: ViewHolder, direction: Int) {
 
-    private fun drawIndicatorLeft(c: Canvas, viewHolder: ViewHolder) {
         val itemView = viewHolder.itemView
 
-        val indicator = RectF(
-            itemView.left.toFloat(),
-            itemView.top.toFloat(),
-            (itemView.left + buttonWidth).toFloat(),
-            itemView.bottom.toFloat()
-        )
-        val indicatorPaint = Paint()
-        indicatorPaint.color = buttonBaseColor
-        c.drawRect(indicator, indicatorPaint)
+        /*  Background  */
+        val indicator: RectF? = when (direction) {
+            ItemTouchHelper.START -> { // Draw indicator at END
+                RectF(
+                    (itemView.right - buttonWidth).toFloat(),
+                    itemView.top.toFloat(),
+                    itemView.right.toFloat(),
+                    itemView.bottom.toFloat()
+                )
+            }
+            ItemTouchHelper.END -> { // Draw indicator at START
+                RectF(
+                    itemView.left.toFloat(),
+                    itemView.top.toFloat(),
+                    (itemView.left + buttonWidth).toFloat(),
+                    itemView.bottom.toFloat()
+                )
+            }
+            else -> null
+        }
+        indicator?.let {
+            val indicatorPaint = Paint()
+            indicatorPaint.color = when (reachedMax) {
+                // Todo?  Animate color change
+                false -> MaterialColors.getColor(viewHolder.itemView, buttonBaseColor)
+                true -> buttonActivatedColor
+            }
+            c.drawRect(indicator, indicatorPaint)
+        }
 
-        // Create icon
-        val iconSave = ResourcesCompat.getDrawable(itemView.context.resources, R.drawable.ic_outline_bookmarks_24, null)
-        iconSave?.let {
+        /*  Foreground  */
+        val icon = when (direction) {
+            ItemTouchHelper.START -> { // Draw indicator at END
+                ResourcesCompat.getDrawable(itemView.context.resources, R.drawable.ic_outline_done_24, null)
+            }
+            ItemTouchHelper.END -> { // Draw indicator at START
+                ResourcesCompat.getDrawable(itemView.context.resources, R.drawable.ic_outline_bookmarks_24, null)
+            }
+            else -> null
+        }
+
+        icon?.let {
+            val iconColor = when (reachedMax) {
+                // Todo?  Animate/switch icons
+                false -> MaterialColors.getColor(viewHolder.itemView, textBaseColor)
+                true -> MaterialColors.getColor(viewHolder.itemView, textActivatedColor)
+            }
+            icon.colorFilter = BlendModeColorFilterCompat.createBlendModeColorFilterCompat(iconColor, BlendModeCompat.SRC_ATOP)
+
             val buttonHeight = itemView.bottom - itemView.top
             val iconHeight = it.intrinsicHeight*1.05
             val iconWidth = it.intrinsicWidth*1.05
 
-            val iconLeft = (itemView.left + (buttonWidth/2 - iconWidth/2)).toInt()
-            val iconRight = (iconLeft + iconWidth).toInt()
-            val iconTop = (itemView.top + (buttonHeight/2 - iconHeight/2)).toInt()
-            val iconBottom = (iconTop + iconHeight).toInt()
-
-            it.setBounds(iconLeft, iconTop, iconRight, iconBottom)
-            it.draw(c)
-        }
-    }
-
-    private fun drawIndicatorRight(c: Canvas, viewHolder: ViewHolder) {
-        val itemView = viewHolder.itemView
-
-        val p = Paint()
-        p.color = buttonBaseColor
-
-        // Create colored container
-        val indicator = RectF(
-            (itemView.right - buttonWidth).toFloat(),
-            itemView.top.toFloat(),
-            itemView.right.toFloat(),
-            itemView.bottom.toFloat()
-        )
-        val indicatorPaint = Paint()
-        indicatorPaint.color = buttonBaseColor
-        c.drawRect(indicator, indicatorPaint)
-
-        // Create icon
-        val iconSave = ResourcesCompat.getDrawable(itemView.context.resources, R.drawable.ic_outline_done_24, null)
-        iconSave?.let {
-            val buttonHeight = itemView.bottom - itemView.top
-            val iconHeight = it.intrinsicHeight*1.05
-            val iconWidth = it.intrinsicWidth*1.05
-
-            val iconTop = (itemView.top + (buttonHeight/2 - iconHeight/2)).toInt()
-            val iconBottom = (iconTop + iconHeight).toInt()
-            val iconRight = (itemView.right - (buttonWidth/2 - iconWidth/2)).toInt()
-            val iconLeft = (iconRight - iconWidth).toInt()
-
-            it.setBounds(iconLeft, iconTop, iconRight, iconBottom)
+            when (direction) {
+                ItemTouchHelper.START -> { // Draw indicator at END
+                    val iconT = (itemView.top + (buttonHeight/2 - iconHeight/2)).toInt()
+                    val iconR = (itemView.right - (buttonWidth/2 - iconWidth/2)).toInt()
+                    val iconB = (iconT + iconHeight).toInt()
+                    val iconL = (iconR - iconWidth).toInt()
+                    it.setBounds(iconL, iconT, iconR, iconB)
+                }
+                ItemTouchHelper.END -> { // Draw indicator at START
+                    val iconL = (itemView.left + (buttonWidth/2 - iconWidth/2)).toInt()
+                    val iconT = (itemView.top + (buttonHeight/2 - iconHeight/2)).toInt()
+                    val iconR = (iconL + iconWidth).toInt()
+                    val iconB = (iconT + iconHeight).toInt()
+                    it.setBounds(iconL, iconT, iconR, iconB)
+                }
+            }
             it.draw(c)
         }
     }

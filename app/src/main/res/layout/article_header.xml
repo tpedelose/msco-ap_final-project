@@ -118,13 +118,13 @@
             android:layout_weight="1" >
         </android.widget.Space>
 
-        <Button
+        <com.google.android.material.button.MaterialButton
+            style="@style/Widget.Material3.Button.TonalButton.Icon"
             android:id="@+id/play_article"
+            android:text="Listen"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Listen"
-            app:icon="@drawable/ic_outline_play_arrow_24"
-            style="@style/Widget.Material3.Button.TonalButton.Icon"/>
+            app:icon="@drawable/ic_outline_play_arrow_24" />
 
     </LinearLayout>
 

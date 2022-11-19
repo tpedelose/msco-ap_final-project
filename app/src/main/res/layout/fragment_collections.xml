@@ -5,6 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:layout_marginBottom="56dp"
     tools:context=".ui.collections.CollectionsFragment">
 
     <!--  Catch-All Add Button  -->
@@ -77,6 +78,7 @@
                         android:layout_marginBottom="8dp"/>
 
                     <androidx.recyclerview.widget.RecyclerView
+                        android:clipToPadding="false"
                         android:id="@+id/follow_list"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -115,7 +117,6 @@
 
                     <androidx.recyclerview.widget.RecyclerView
                         android:nestedScrollingEnabled="false"
-                        android:overScrollMode="ifContentScrolls"
                         android:id="@+id/collection_list"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
