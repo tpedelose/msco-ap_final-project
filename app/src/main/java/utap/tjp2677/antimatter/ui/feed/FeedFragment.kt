@@ -67,7 +67,7 @@ class FeedFragment : Fragment() {
             val article = viewModel.getArticleAt(position)
             viewModel.setOpenedArticle(article)
             findNavController().navigate(R.id.navigate_to_article_detail)
-            viewModel.setArticleReadStatus(position, true)
+//            viewModel.setArticleReadStatus(position, true)
         }
         rv.adapter = adapter
 

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="annotation_delete" type="id" />
+    <item name="annotation_share" type="id" />
+</resources>

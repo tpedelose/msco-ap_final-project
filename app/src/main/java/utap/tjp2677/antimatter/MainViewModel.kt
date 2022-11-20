@@ -4,16 +4,17 @@ import android.content.Context
 import android.content.Intent
 import android.speech.tts.TextToSpeech
 import android.util.Log
+import androidx.core.text.parseAsHtml
 import androidx.lifecycle.*
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.StateFlow
+import com.google.firebase.firestore.DocumentId
+import org.jsoup.Jsoup
+import org.jsoup.safety.Safelist
 import utap.tjp2677.antimatter.authentication.FirestoreAuthLiveData
 import utap.tjp2677.antimatter.authentication.FirestoreHelper
 import utap.tjp2677.antimatter.authentication.models.Article
 import utap.tjp2677.antimatter.authentication.models.Publication
 import utap.tjp2677.antimatter.authentication.models.Collection
+import utap.tjp2677.antimatter.authentication.models.Annotation
 import utap.tjp2677.antimatter.ui.settings.SettingsActivity
 
 
@@ -27,6 +28,7 @@ class MainViewModel : ViewModel() {
     // TODO:  Turn this into a MediaBrowserSerivce
 
     lateinit var ttsEngine: TextToSpeech
+    private val playerIsActive = MutableLiveData<Boolean>(false)  // Quick and dirty way of doing this
     private val playerPlaylist = MutableLiveData<List<Publication>>()
     private val playerCurrentIndex = MutableLiveData<Int>(0)
 
@@ -36,12 +38,24 @@ class MainViewModel : ViewModel() {
     private val isPlaying = MutableLiveData<Boolean>(false)
 
 
+    fun setPlayerIsActive(active: Boolean) {
+        playerIsActive.value = active
+    }
+
+    fun observePlayerIsActive(): LiveData<Boolean> {
+        return playerIsActive
+    }
+
     fun observeNowPlaying(): LiveData<Article?> {
         return nowPlayingArticle
     }
 
     fun setNowPlaying(article: Article) {
         nowPlayingArticle.value = article
+    }
+
+    fun setNowPlayingArticleAsOpenArticle() {
+        openArticle.value = nowPlayingArticle.value
     }
 
     fun observeIsPlayingStatus(): LiveData<Boolean> {
@@ -56,14 +70,64 @@ class MainViewModel : ViewModel() {
         isPlaying.value = playing
     }
 
+    fun postIsPlayingStatus(playing: Boolean) {
+        isPlaying.postValue(playing)
+    }
+
     fun stopPlaying() {
         ttsEngine.stop()
         isPlaying.value = false
-        nowPlayingArticle.value = null
     }
 
-    fun openArticleIsLoaded(): Boolean {
+    fun openArticleIsLoadedToPlayer(): Boolean {
         return (openArticle.value?.firestoreID == nowPlayingArticle.value?.firestoreID)
+    }
+
+    fun playArticle() {
+        // https://rtdtwo.medium.com/speech-to-text-and-text-to-speech-with-android-85758ff0f6d3
+
+        nowPlayingArticle.value?.let {
+            val body: Sequence<String> = createTextSequence(it)
+            if (body.none()) { return } // Skip speech if there's nothing to read
+
+            val attr: String = createAttribution(it)
+
+            // Time To Speak!
+            setIsPlayingStatus(true)
+            ttsEngine.speak(attr, TextToSpeech.QUEUE_FLUSH, null, "tts-attribution")
+            ttsEngine.playSilentUtterance(450, TextToSpeech.QUEUE_ADD, "tts-pause")
+
+            body.forEachIndexed fe@{ index, s ->
+                if (s.isBlank()) { return@fe }  // i.e. "continue"
+                ttsEngine.speak(s, TextToSpeech.QUEUE_ADD, null, "tts-body-$index")
+                // Add a short pause between paragraphs
+                ttsEngine.playSilentUtterance(120, TextToSpeech.QUEUE_ADD, "tts-body-$index-pause")
+            }
+
+            // To trigger some onDone action
+            ttsEngine.playSilentUtterance(1, TextToSpeech.QUEUE_ADD, "tts-final")
+        }
+    }
+
+    private fun createAttribution(article: Article): String {
+        return when {
+            article.author.isNotBlank() && article.publicationName.isNotBlank() -> {
+                "${article.author} for ${article.publicationName}"
+            }
+            article.author.isNotBlank() -> "From ${article.author}"
+            article.publicationName.isNotBlank() -> "From ${article.publicationName}"
+            else -> ""
+        }
+    }
+
+    private fun createTextSequence(article: Article): Sequence<String> {
+        val cleanText = Jsoup.clean(article.content, Safelist.basic()).parseAsHtml().toString()
+        if (cleanText.isBlank()) {
+            return sequenceOf()
+        }
+
+        // TODO: Split text into smaller chunks for progress tracking. By sentence? Word?
+        return cleanText.splitToSequence("\n").filter { it.isNotBlank() }
     }
 
 
@@ -145,6 +209,36 @@ class MainViewModel : ViewModel() {
         openArticle.postValue(article)
     }
 
+
+    /* ========================================== */
+    /*            Article Annotations             */
+    /* ========================================== */
+
+    private var openAnnotations = MutableLiveData<List<Annotation>>()
+
+    /* --- Create --- */
+
+    fun addAnnotation(articleId: String, start: Int, end: Int) {
+        firestoreHelper.addAnnotationToArticle(articleId, start, end)
+        // TODO: Callback
+    }
+
+    /* --- Read --- */
+
+    fun fetchAnnotations() {
+        openArticle.value?.firestoreID?.let {
+            firestoreHelper.fetchAnnotations(openAnnotations, it)
+        }
+    }
+
+    fun observeOpenAnnotations(): LiveData<List<Annotation>> {
+        return openAnnotations
+    }
+
+    /* --- Update --- */
+
+
+    /* --- Destroy --- */
 
 
     /* ========================================== */

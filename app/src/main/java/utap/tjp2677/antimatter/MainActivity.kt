@@ -3,17 +3,25 @@ package utap.tjp2677.antimatter
 import android.app.Activity
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
 import android.util.Log
+import android.view.ViewGroup
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isGone
+import androidx.core.view.marginBottom
+import androidx.fragment.app.FragmentTransaction
+import androidx.fragment.app.commit
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.elevation.SurfaceColors
 import utap.tjp2677.antimatter.authentication.AuthInit
 import utap.tjp2677.antimatter.databinding.ActivityMainBinding
+import utap.tjp2677.antimatter.ui.player.PlayerFragment
+import utap.tjp2677.antimatter.utils.toDp
+import utap.tjp2677.antimatter.utils.toPx
 
 
 class MainActivity : AppCompatActivity() {
@@ -42,12 +50,48 @@ class MainActivity : AppCompatActivity() {
             viewModel.fetchArticles(limit=10)
 
             // Initialize TTS Engine
-            // TODO:  Make a class to handle player
+            // TODO:  Make a class/service to handle player
             viewModel.ttsEngine = initTTSEngine()
+
+            // Watch for playing article
+            viewModel.observeNowPlaying().observe(this) {
+                // ignore if null
+                if (it == null) { return@observe }
+
+                // ignore if fragment already exists
+                val frag = supportFragmentManager.findFragmentById(R.id.fragment_player) as? PlayerFragment
+                if (frag != null) { return@observe }
+
+                // Else, create the fragment!
+                Log.d("Create player?","Player does not exist, creating")
+
+                supportFragmentManager.commit {
+                    add(R.id.fragment_player, PlayerFragment(), "Player")
+                    // TRANSIT_FRAGMENT_FADE calls for the Fragment to fade away
+                    setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
+                    viewModel.setPlayerIsActive(true)
+
+                    val lp = binding.navHostFragmentActivityMain.layoutParams as ViewGroup.LayoutParams
+//                    lp.bottomMargin += 56.toPx.toInt()
+//                    binding.navHostFragmentActivityMain.let { view ->
+//                        view.setPadding(
+//                            view.paddingLeft,
+//                            view.paddingTop,
+//                            view.paddingRight,
+//                            view.paddingRight + 56.toPx.toInt()
+//                        )
+//                    }
+                }
+            }
         }
 
         // Initialize Navigation
         initNavigation()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+//        viewModel.ttsEngine.shutdown()
     }
 
     private fun initNavigation() {
@@ -67,18 +111,40 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initTTSEngine(): TextToSpeech {
-        // Pass in context and the listener.
-        return TextToSpeech(this) { status ->
-            // set our locale only if init was success.
-//            if (status == TextToSpeech.SUCCESS) {
-//                .language = textToSpeechEngine.defaultVoice.locale
-//            }
+
+        val tts = TextToSpeech(this) {
+            // could do things here like set language, voice, etc.
+            // https://stackoverflow.com/questions/35049850/unresolved-reference-inside-anonymous-kotlin-listener
         }
+
+        val utterListener = object: UtteranceProgressListener() {
+            override fun onStart(utteranceId: String) {
+
+            }
+
+            override fun onDone(utteranceId: String) {
+                Log.d("UTTER", utteranceId)
+                if (utteranceId == "tts-final") {
+                    viewModel.postIsPlayingStatus(false)
+                }
+            }
+
+            @Deprecated("Deprecated in Java")
+            override fun onError(p0: String?) {
+                TODO("Not yet implemented")
+            }
+
+            override fun onError(utteranceId: String, errorCode: Int) {
+
+            }
+        }
+        tts.setOnUtteranceProgressListener(utterListener)
+
+        return tts
     }
 
     private val signInLauncher = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult())
-        { result ->
+        ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
                 viewModel.updateUser()
             } else {

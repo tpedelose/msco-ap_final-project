@@ -7,6 +7,7 @@ import com.google.firebase.firestore.ktx.firestoreSettings
 import utap.tjp2677.antimatter.authentication.models.Article
 import utap.tjp2677.antimatter.authentication.models.Publication
 import utap.tjp2677.antimatter.authentication.models.Collection
+import utap.tjp2677.antimatter.authentication.models.Annotation
 import kotlin.math.min
 
 const val FETCH_DEFAULT = 20
@@ -90,6 +91,64 @@ class FirestoreHelper() {
             .addOnSuccessListener {
                 onSuccessCallback()
             }
+    }
+
+    /* ========================================== */
+    /*            Article Annotations             */
+    /* ========================================== */
+
+
+    fun fetchAnnotations(annotationList: MutableLiveData<List<Annotation>>, articleId: String) {
+
+        val collectionRef = db.collection("articles/$articleId/annotations")
+
+        collectionRef
+            .get()
+            .addOnSuccessListener { result ->
+                annotationList.postValue(
+                    result.documents.mapNotNull {
+                        it.toObjectOrNull(Annotation::class.java)
+                    }
+                )
+            }
+    }
+
+    fun addAnnotationToArticle(articleId: String, start: Int, end: Int) {
+        val TAG = "AddAnnotationToArticle"
+
+        val collectionRef = db.collection("articles/$articleId/annotations")
+
+        val annotationData = hashMapOf(
+            "start" to start,
+            "end" to end
+        )
+
+        collectionRef
+            .document()
+            .set(annotationData)
+            .addOnSuccessListener {
+                Log.d(TAG, "DocumentSnapshot successfully written!")
+            }
+            .addOnFailureListener {
+                e -> Log.w(TAG, "Error writing document", e)
+            }
+    }
+
+    fun deleteAnnotationFromArticle(articleId: String, annotationId: String) {
+        val TAG = "DeleteAnnotationFromArticle"
+
+        val collectionRef = db.collection("articles/$articleId/annotations")
+
+        collectionRef
+            .document(annotationId)
+            .delete()
+            .addOnSuccessListener {
+                Log.d(TAG, "DocumentSnapshot successfully deleted!")
+            }
+            .addOnFailureListener {
+                    e -> Log.w(TAG, "Error deleting document", e)
+            }
+
     }
 
 

@@ -9,11 +9,29 @@
     android:layout_margin="4dp"
     tools:context=".ui.player.PlayerFragment">
 
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <ImageView
+            android:id="@+id/image_container"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"/>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
     <LinearLayout
+        android:id="@+id/content_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="horizontal"
         android:gravity="center"
+        android:scaleType="centerCrop"
         android:paddingEnd="6dp"
         android:paddingStart="0dp">
 
@@ -33,7 +51,7 @@
 
             <TextView
                 android:id="@+id/title"
-                android:text="Title"
+                android:text="Article Title"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_gravity="fill"
@@ -47,6 +65,13 @@
                 android:focusableInTouchMode="true"
                 android:foregroundGravity="left"
                 android:freezesText="true"
+                />
+
+            <TextView
+                android:id="@+id/publication"
+                android:text="Publication Name"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
                 />
 
         </LinearLayout>
