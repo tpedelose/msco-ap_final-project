@@ -1,10 +1,8 @@
 package utap.tjp2677.antimatter.ui.article
 
 import android.content.Context
-import android.content.Intent
 import android.graphics.Color
 import android.graphics.Rect
-import android.net.Uri
 import android.os.Bundle
 import android.text.*
 import android.text.method.LinkMovementMethod
@@ -12,9 +10,8 @@ import android.text.style.ClickableSpan
 import android.util.Log
 import android.view.*
 import android.widget.ImageView
+import android.widget.ScrollView
 import android.widget.TextView
-import android.widget.Toast
-import androidx.annotation.MenuRes
 import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
@@ -26,7 +23,9 @@ import com.bumptech.glide.request.RequestOptions
 import com.google.android.material.color.MaterialColors
 import utap.tjp2677.antimatter.MainViewModel
 import utap.tjp2677.antimatter.R
+import utap.tjp2677.antimatter.authentication.models.Annotation
 import utap.tjp2677.antimatter.authentication.models.Article
+import utap.tjp2677.antimatter.authentication.models.Collection
 import utap.tjp2677.antimatter.databinding.FragmentArticleBinding
 import utap.tjp2677.antimatter.utils.toDp
 import kotlin.math.max
@@ -66,7 +65,8 @@ class ArticleFragment : Fragment() {
             textView, actionMode, menuItem -> Boolean
                 return@SelectionCallback when (menuItem?.itemId) {
                     R.id.highlight -> {
-                        createAnnotation(textView, textView.selectionStart, textView.selectionEnd)
+                        val subtext = textView.text.substring(textView.selectionEnd, textView.selectionEnd)
+                        createAnnotation(subtext, textView.selectionStart, textView.selectionEnd)
                         true
                     }
                     else -> false
@@ -75,8 +75,28 @@ class ArticleFragment : Fragment() {
 
         // Observers
         viewModel.observeOpenedArticle().observe(viewLifecycleOwner) {
-            viewModel.fetchAnnotations()
+            val cid = viewModel.getOpenCollection()?.firestoreID
+            viewModel.fetchAnnotations(cid!!, it.firestoreID)
             loadArticle(it)
+            binding.article.fullScroll(ScrollView.FOCUS_UP)
+        }
+
+        viewModel.observeOpenAnnotations().observe(viewLifecycleOwner) { annotations ->
+            val spanText = (binding.content.text as Spannable)
+
+            // Clear any old Annotations, keeping HTML styles
+            spanText.getSpans(0, spanText.length, AnnotationSpan::class.java).forEach {
+                spanText.removeSpan(it)
+            }
+
+            // Add new annotations
+            annotations?.forEach {
+                val spanner = AnnotationSpan(highlightColor, annotation = it)
+                spanner.clickHandler = this::annotationClickCallbackHandler
+                spanText.setSpan(spanner, it.start, it.end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            }
+
+            binding.content.text = spanText
         }
 
         viewModel.observeIsPlayingStatus().observe(viewLifecycleOwner) { isPlaying ->
@@ -92,17 +112,6 @@ class ArticleFragment : Fragment() {
             }
         }
 
-        viewModel.observeOpenAnnotations().observe(viewLifecycleOwner) { annotations ->
-            Log.d("Annotations", annotations.toString())
-            if (annotations == null) { return@observe }
-
-            val spanned = (binding.content.text as Spannable)
-            annotations.forEach {
-                spanned.setSpan(AnnotationSpan(highlightColor), it.start, it.end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-            }
-            binding.content.text = spanned
-        }
-
         // Listeners
         binding.bottomAppBar.setNavigationOnClickListener {
             findNavController().popBackStack()
@@ -112,7 +121,7 @@ class ArticleFragment : Fragment() {
             if (viewModel.getIsPlayingStatus() && viewModel.openArticleIsLoadedToPlayer()) {
                 viewModel.stopPlaying()
             } else {
-                viewModel.getOpenedArticle()?.let {
+                viewModel.getOpenArticle()?.let {
                     viewModel.setNowPlaying(it)
                     viewModel.playArticle()
                 }
@@ -151,6 +160,7 @@ class ArticleFragment : Fragment() {
     }
 
     private fun initMenuProvider () {
+        // Todo?  Remove certain icons if functions aren't available?
         binding.bottomAppBar.addMenuProvider(
             object : MenuProvider {
                 override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
@@ -158,14 +168,19 @@ class ArticleFragment : Fragment() {
                 }
 
                 override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
+                    val article = viewModel.getOpenArticle()
                     return when (menuItem.itemId) {
                         R.id.add -> {true}  // TODO: Handle favorite icon press
                         R.id.more -> {true}  // TODO: Handle more item (inside overflow menu) press
+                        R.id.share -> {
+                            article?.link?.let {
+                                val messageTitle = "${article.title} - ${article.publicationName}"
+                                viewModel.shareMessage(binding.root.context, it, messageTitle)
+                            }
+                            true
+                        }
                         R.id.open_in_browser -> {
-                            // Handle open in browser
-                            val article = viewModel.getOpenedArticle()
-                            Log.d("URL", "${article?.link}")
-                            article?.link?.let { url: String -> openWebPage(url) }
+                            article?.link?.let { viewModel.openInBrowser(binding.root.context, it) }
                             true
                         }
                         else -> false
@@ -196,48 +211,65 @@ class ArticleFragment : Fragment() {
             .into(imageView)
     }
 
-    private fun openWebPage(url: String) {
-        val webpage: Uri = Uri.parse(url)
-        val intent = Intent(Intent.ACTION_VIEW, webpage)
-        if (activity?.let { intent.resolveActivity(it.packageManager) } != null) {
-            startActivity(intent)
-        } else {
-            Toast.makeText(this.context, "No browsers installed", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    private fun createAnnotation(textView: TextView, start: Int, end: Int) {
+    private fun createAnnotation(text: String, start: Int, end: Int) {
         if (start == end) { return }  // reject
 
-        val spanner = AnnotationSpan(highlightColor)
-        textView.text = (textView.text as Spannable).apply {
-            this.setSpan(spanner, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        // Todo? Put collectionId in article?
+        val cid = viewModel.getOpenCollection()?.firestoreID
+        val aid = viewModel.getOpenArticle()?.firestoreID
+        (cid != null && aid != null).let {
+            viewModel.addAnnotation(cid!!, aid!!, start, end, text)
         }
-        viewModel.getOpenedArticle()?.firestoreID?.let {
-            viewModel.addAnnotation(it, start, end)
-        }
-
     }
 
+    private fun annotationClickCallbackHandler(
+        annotation: Annotation, mode: ActionMode, menuItem: MenuItem): Boolean {
+        val TAG = "annotationClickCallbackHandler"
+        val article: Article? = viewModel.getOpenArticle()
+        val collection: Collection? = viewModel.getOpenCollection()
+
+        return when (menuItem.itemId) {
+            R.id.annotation_delete -> {
+                collection ?: return false
+                article ?: return false
+                Log.d(TAG,
+                    "collectionId; ${collection.firestoreID}, articleId: ${article.firestoreID}, firestoreId: ${annotation.firestoreID}")
+                viewModel.deleteAnnotation(
+                    collection.firestoreID,
+                    article.firestoreID,
+                    annotation.firestoreID
+                )
+                true
+            }
+            R.id.annotation_share -> {
+                annotation.text?.let {
+                    viewModel.shareMessage(binding.root.context, it, article?.title)
+                }
+                true
+            }
+            else -> false
+        }
+    }
 }
 
 class SelectionCallback(private val textView: TextView, val clickHandler: (TextView, ActionMode?, MenuItem?) -> Boolean)
     : ActionMode.Callback {
     // https://stackoverflow.com/questions/12995439/custom-cut-copy-action-bar-for-edittext-that-shows-text-selection-handles/13004720#13004720
+    val TAG = "TextSelectionCallback"
 
-    override fun onCreateActionMode(p0: ActionMode?, p1: Menu?): Boolean {
-        p0?.menuInflater?.inflate(R.menu.article_text_selection, p1)
+    override fun onCreateActionMode(p0: ActionMode, p1: Menu): Boolean {
+        p0.menuInflater?.inflate(R.menu.article_text_selection, p1)
         return true
     }
 
-    override fun onPrepareActionMode(p0: ActionMode?, p1: Menu?): Boolean {
+    override fun onPrepareActionMode(p0: ActionMode, p1: Menu): Boolean {
         // Remove select all?
-        p1?.removeItem(android.R.id.selectAll)
+        p1.removeItem(android.R.id.selectAll)
         return true
     }
 
-    override fun onActionItemClicked(p0: ActionMode?, p1: MenuItem?): Boolean {
-        Log.d("TextSelectionCallback", "onActionItemClicked item=${p1.toString()}/${p1?.itemId}")
+    override fun onActionItemClicked(p0: ActionMode, p1: MenuItem): Boolean {
+        Log.d(TAG, "onActionItemClicked item=${p1}/${p1.itemId}")
         return clickHandler(textView, p0, p1)
     }
 
@@ -245,34 +277,53 @@ class SelectionCallback(private val textView: TextView, val clickHandler: (TextV
     }
 }
 
-
-class AnnotationSpan(private val backgroundColor: Int, private val textColor: Int? = null)
+class AnnotationSpan(private val backgroundColor: Int, private val textColor: Int? = null,
+                     private val annotation: Annotation)
     : ClickableSpan()  {
 
-    val TAG = "Annotation Span"
+    private val TAG = "Annotation Span"
+
+    var clickHandler: ((Annotation, ActionMode, MenuItem) -> Boolean)? = null
 
     override fun onClick(p0: View) {
         // https://stackoverflow.com/questions/11905486/how-get-coordinate-of-a-clickablespan-inside-a-textview
-//            TODO("Not yet implemented")
-        Log.d(TAG, "Clicky!")
 
-        if (p0 is TextView) {
-            (p0.text as Spanned).let {
-                val start = it.getSpanStart(this)
-                val end = it.getSpanEnd(this)
-                Log.d(TAG, "$start, $end")
+        if (p0 !is TextView) { return }
 
-                val xMin: Float = p0.layout.getPrimaryHorizontal(start)
-                val xMax: Float = p0.layout.getPrimaryHorizontal(end)
-                Log.d(TAG, "$xMin, $xMax")
+        val (l, t, r, b) = getPositionOfActionMode(p0)
 
-                val lineStartOffset = p0.layout.getLineForOffset(start)
-                val lineEndOffset = p0.layout.getLineForOffset(end)
-
-                val f = AnnotationClickCallback()
-                f.startActionMode(p0, contentLeft = xMin.toInt(), contentRight = xMax.toInt())
-
+        clickHandler?.let {
+            val clickCallback = AnnotationClickCallback() ACC@{ mode, menuItem ->
+                return@ACC it(annotation, mode, menuItem)
             }
+            clickCallback.startActionMode(p0, contentLeft = l, contentRight = r)
+        }
+    }
+
+    private fun getPositionOfActionMode(textView: TextView): Array<Int> {
+
+        val spanner = (textView.text as Spanned)
+
+//        spanner.getSpans(0, textView.text.length, this)
+
+        val start = spanner.getSpanStart(this)
+        val end = spanner.getSpanEnd(this)
+        Log.d(TAG, "$start, $end")
+
+        textView.layout.let {
+            val xMin: Float = it.getPrimaryHorizontal(start)
+            val xMax: Float = it.getPrimaryHorizontal(end)
+            Log.d(TAG, "$xMin, $xMax")
+
+            val lineStartOffset = it.getLineForOffset(start)
+            val lineEndOffset = it.getLineForOffset(end)
+
+            val left = xMin.toInt()
+            val right = xMax.toInt()
+            val top = 0
+            val bottom = 0
+
+            return arrayOf(left, top, right, bottom)
         }
     }
 
@@ -284,24 +335,20 @@ class AnnotationSpan(private val backgroundColor: Int, private val textColor: In
     }
 }
 
-interface OnActionItemClickListener {
-    fun onActionItemClick(item: MenuItem)
-}
-
-class AnnotationClickCallback : ActionMode.Callback2() {
+class AnnotationClickCallback(val clickHandler: (ActionMode, MenuItem) -> Boolean) : ActionMode.Callback2() {
     // https://medium.com/over-engineering/using-androids-actionmode-e903181f2ee3
 
-    var onActionItemClickListener: OnActionItemClickListener? = null
+    private var TAG = "AnnoationClickCallback"
 
-    private var mode: ActionMode? = null
-    @MenuRes private var menuResId: Int = 0
     private var contentLeft: Int = 0
     private var contentTop: Int = 0
     private var contentRight: Int = 0
     private var contentBottom: Int = 0
+    private var aMode: ActionMode? = null
 
     override fun onCreateActionMode(mode: ActionMode, menu: Menu): Boolean {
         mode.menuInflater?.inflate(R.menu.article_annotation_click, menu)
+        aMode = mode
         return true
     }
 
@@ -310,30 +357,22 @@ class AnnotationClickCallback : ActionMode.Callback2() {
     }
 
     override fun onActionItemClicked(mode: ActionMode, menuItem: MenuItem): Boolean {
-        when (menuItem.itemId) {
-            R.id.annotation_delete -> {}
-            R.id.annotation_share -> {}
-        }
-//        mode.finish()
-        return true
+        Log.d(TAG, "onActionItemClicked item=${menuItem}/${menuItem.itemId}")
+        mode.finish()
+        return clickHandler(mode, menuItem)
     }
 
-    override fun onDestroyActionMode(mode: ActionMode?) {
+    override fun onDestroyActionMode(mode: ActionMode) {
+        aMode = null
     }
 
     override fun onGetContentRect(mode: ActionMode, view: View, outRect: Rect) {
         outRect.set(contentLeft, contentTop, contentRight, contentBottom)
     }
 
-    fun startActionMode(
-        view: View,
-//                        @MenuRes menuResId: Int,
-        contentLeft: Int = 0,
-        contentTop: Int = 0,
-        contentRight: Int = view.width,
-        contentBottom: Int = view.height,
+    fun startActionMode(view: View, contentLeft: Int = 0, contentTop: Int = 0,
+                        contentRight: Int = view.width, contentBottom: Int = view.height,
     ) {
-//        this.menuResId = menuResId
         this.contentLeft = contentLeft
         this.contentTop = contentTop
         this.contentRight = contentRight

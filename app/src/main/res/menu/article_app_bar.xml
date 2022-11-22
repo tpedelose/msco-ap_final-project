@@ -3,17 +3,24 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
+        android:id="@+id/share"
+        android:icon="@drawable/ic_outline_share_24"
+        android:title="Share"
+        app:showAsAction="always"
+        app:menuAlignmentMode="auto"/>
+
+    <item
         android:id="@+id/add"
         android:icon="@drawable/ic_outline_add_box_24"
         android:title="Add to Collection"
-        app:showAsAction="ifRoom"
+        app:showAsAction="always"
         app:menuAlignmentMode="auto"/>
 
     <item
         android:id="@+id/open_in_browser"
         android:icon="@drawable/ic_outline_open_in_browser_24"
         android:title="Open in Browser"
-        app:showAsAction="ifRoom"
+        app:showAsAction="always"
         app:menuAlignmentMode="auto"/>
 
     <item

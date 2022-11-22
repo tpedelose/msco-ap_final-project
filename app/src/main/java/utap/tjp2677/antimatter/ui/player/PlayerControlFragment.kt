@@ -51,6 +51,7 @@ class PlayerFragment : Fragment() {
 
         viewModel.observeNowPlaying().observe(viewLifecycleOwner) {
             if (it == null) { return@observe }
+
             binding.title.text = it.title
             binding.title.isSelected = true  // To make the marquee move
             binding.publication.text = it.publicationName
@@ -156,8 +157,8 @@ class PlayerTouchHandler(val onSwipeCallback: ((direction: SwipeDirection) -> Un
     private var isSwiped: Boolean = false
     private var isSwipedDirection: SwipeDirection = SwipeDirection.START
 
-    private var xDisplacementBuffer = 20.toDp
-    private var yDisplacementBuffer = 20.toDp
+    private var xDisplacementBuffer = 24.toDp
+    private var yDisplacementBuffer = 24.toDp
 
     private var parentWidth: Float = 0f
 
@@ -181,6 +182,7 @@ class PlayerTouchHandler(val onSwipeCallback: ((direction: SwipeDirection) -> Un
             }
 
             MotionEvent.ACTION_UP -> {
+
                 // Reset initial position
                 x0 = 0f
                 y0 = 0f
@@ -194,6 +196,10 @@ class PlayerTouchHandler(val onSwipeCallback: ((direction: SwipeDirection) -> Un
                         SwipeDirection.START -> -parentWidth
                         SwipeDirection.END -> parentWidth
                     }
+                }
+                else if (abs(dX) < xDisplacementBuffer){
+                    // Consider it a click
+                    view.performClick()
                 }
 
                 view.animate()

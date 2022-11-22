@@ -14,4 +14,5 @@ data class Annotation(
     // Content
     var start: Int = -1,
     var end: Int = -1,
+    var text: String? = null
 )

@@ -31,12 +31,12 @@ class CollectionListAdapter(private val viewModel: MainViewModel, val onClickCal
         binding.icon.text = item.icon
         binding.title.text = item.name
 
-        if (item.name == "Read Later") {
-            Log.d(javaClass.simpleName, "READ LATER")
-            // Change text style
-            val style = com.google.android.material.R.style.TextAppearance_M3_Sys_Typescale_TitleLarge
-            binding.title.setTextAppearance(style)
+        // Change text style for "most important" collection (or resest)
+        val textStyle = when (position) {
+            0 -> com.google.android.material.R.style.TextAppearance_M3_Sys_Typescale_TitleLarge
+            else -> com.google.android.material.R.style.TextAppearance_M3_Sys_Typescale_TitleMedium
         }
+        binding.title.setTextAppearance(textStyle)
 
         // Click listeners
         binding.root.setOnClickListener {

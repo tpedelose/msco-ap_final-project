@@ -6,59 +6,60 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/article"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent" >
 
-        <androidx.core.widget.NestedScrollView
-            android:id="@+id/article"
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent" >
+            android:layout_height="match_parent"
+            android:orientation="vertical" >
+
+            <include layout="@layout/article_header"
+                android:id="@+id/header" />
 
             <LinearLayout
+                android:id="@+id/content_container"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_marginBottom="72dp"
                 android:orientation="vertical" >
 
-                <include layout="@layout/article_header"
-                    android:id="@+id/header" />
+                <com.google.android.material.imageview.ShapeableImageView
+                    android:id="@+id/heroImage"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="12dp"/>
 
-                <LinearLayout
-                    android:id="@+id/content_container"
+                <TextView
+                    android:id="@+id/content"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:paddingBottom="72dp"
-                    android:orientation="vertical" >
+                    android:text="@string/lorem_ipsum"
+                    android:textIsSelectable="true"
+                    android:textAppearance="?attr/textAppearanceBodyLarge"
+                    android:padding="16dp" />
 
-                    <com.google.android.material.imageview.ShapeableImageView
-                        android:id="@+id/heroImage"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:padding="12dp"/>
-
-                    <TextView
-                        android:id="@+id/content"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:text="@string/lorem_ipsum"
-                        android:textIsSelectable="true"
-                        android:textAppearance="?attr/textAppearanceBodyLarge"
-                        android:padding="16dp" />
-
-                </LinearLayout>
+                <com.google.android.material.divider.MaterialDivider
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="36dp"
+                    app:dividerInsetStart="56dp"
+                    app:dividerInsetEnd="56dp"/>
 
             </LinearLayout>
 
-        </androidx.core.widget.NestedScrollView>
+        </LinearLayout>
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.core.widget.NestedScrollView>
+
 
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/bottomAppBar_container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        android:fitsSystemWindows="true"
         app:layout_constraintBottom_toBottomOf="@+id/article"
         app:liftOnScroll="true">
 
@@ -68,7 +69,7 @@
             android:layout_height="56dp"
             android:background="?attr/colorSurface"
             android:elevation="4dp"
-            app:menu="@menu/bottom_app_bar_article"
+            app:menu="@menu/article_app_bar"
             app:navigationIcon="@drawable/ic_outline_keyboard_double_arrow_left_24" />
 
     </com.google.android.material.appbar.AppBarLayout>

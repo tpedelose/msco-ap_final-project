@@ -94,7 +94,9 @@ class CollectionsFragment : Fragment() {
 
         // Content
         collectionListAdapter = CollectionListAdapter(viewModel) {
-            findNavController().navigate(R.id.action_navigation_collections_to_collectionViewFragment)
+            // Todo: Don't add to backstack
+            viewModel.setOpenCollection(it)
+            findNavController().navigate(R.id.action_navigation_collections_to_navigation_feed)
         }
         rv.adapter = collectionListAdapter
 

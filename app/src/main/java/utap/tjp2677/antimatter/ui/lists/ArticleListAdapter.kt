@@ -115,9 +115,9 @@ open class ArticleItemTouchHelper(
     private val buttonWidth = 80.toPx // itemView.width * 1/5f
     private val buttonBaseColor = com.google.android.material.R.attr.colorSurfaceVariant //com.google.android.material.R.attr.colorOnSurfaceVariant
     private val textBaseColor = com.google.android.material.R.attr.colorOnSurfaceVariant // Color.WHITE
-    private val buttonActivatedColor = Color.HSVToColor(floatArrayOf(92f, 0.18f, 0.88f))
+    private val buttonEndActivatedColor = Color.HSVToColor(floatArrayOf(92f, 0.18f, 0.88f))
+    private val buttonStartActivatedColor = Color.HSVToColor(floatArrayOf(260f, 0.13f, 0.88f))
     private val textActivatedColor = com.google.android.material.R.attr.colorOnSurfaceInverse
-
 
     override fun getMovementFlags(
         recyclerView: RecyclerView,
@@ -212,11 +212,11 @@ open class ArticleItemTouchHelper(
 
         when {
             dX < 0 -> {
-                Log.d("SWIPE TO START", dX.toString())
+                Log.v("SWIPE TO START", dX.toString())
                 drawIndicator(c, viewHolder, ItemTouchHelper.START)
             }
             dX > 0 -> {
-                Log.d("SWIPE TO END", dX.toString())
+                Log.v("SWIPE TO END", dX.toString())
                 drawIndicator(c, viewHolder, ItemTouchHelper.END)
             }
             else -> c.restore()
@@ -230,16 +230,22 @@ open class ArticleItemTouchHelper(
         val itemView = viewHolder.itemView
 
         /*  Background  */
+        val indicatorPaint = Paint()
+        indicatorPaint.color = MaterialColors.getColor(viewHolder.itemView, buttonBaseColor)
+
         val indicator: RectF? = when (direction) {
             ItemTouchHelper.START -> { // Draw indicator at END
+                if (reachedMax) { indicatorPaint.color = buttonEndActivatedColor }
                 RectF(
                     (itemView.right - buttonWidth).toFloat(),
                     itemView.top.toFloat(),
                     itemView.right.toFloat(),
                     itemView.bottom.toFloat()
                 )
+
             }
             ItemTouchHelper.END -> { // Draw indicator at START
+                if (reachedMax) { indicatorPaint.color = buttonStartActivatedColor }
                 RectF(
                     itemView.left.toFloat(),
                     itemView.top.toFloat(),
@@ -249,15 +255,7 @@ open class ArticleItemTouchHelper(
             }
             else -> null
         }
-        indicator?.let {
-            val indicatorPaint = Paint()
-            indicatorPaint.color = when (reachedMax) {
-                // Todo?  Animate color change
-                false -> MaterialColors.getColor(viewHolder.itemView, buttonBaseColor)
-                true -> buttonActivatedColor
-            }
-            c.drawRect(indicator, indicatorPaint)
-        }
+        indicator?.let { c.drawRect(indicator, indicatorPaint) }
 
         /*  Foreground  */
         val icon = when (direction) {

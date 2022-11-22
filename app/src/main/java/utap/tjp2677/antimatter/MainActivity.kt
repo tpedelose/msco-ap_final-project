@@ -40,18 +40,18 @@ class MainActivity : AppCompatActivity() {
         window.statusBarColor = color
 
         if (savedInstanceState == null) {
-            // Authentication
-            AuthInit(viewModel, signInLauncher)
 
-            // Draw behind navigation and status bars
-            window.setDecorFitsSystemWindows(false)
+            // Watch for change in user
+            viewModel.observeUser().observe(this) {
+                if (it == null) { return@observe }
 
-            // Start with articles
-            viewModel.fetchArticles(limit=10)
-
-            // Initialize TTS Engine
-            // TODO:  Make a class/service to handle player
-            viewModel.ttsEngine = initTTSEngine()
+                // Fetch starting data
+                Log.d("ObserveUser", "${it.uid} logged in")
+                viewModel.initHelper()
+                viewModel.fetchCollectionAsOpen("Inbox")
+//                viewModel.fetchCollections()
+//                viewModel.fetchArticles("Inbox", limit=10)
+            }
 
             // Watch for playing article
             viewModel.observeNowPlaying().observe(this) {
@@ -70,28 +70,22 @@ class MainActivity : AppCompatActivity() {
                     // TRANSIT_FRAGMENT_FADE calls for the Fragment to fade away
                     setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
                     viewModel.setPlayerIsActive(true)
-
-                    val lp = binding.navHostFragmentActivityMain.layoutParams as ViewGroup.LayoutParams
-//                    lp.bottomMargin += 56.toPx.toInt()
-//                    binding.navHostFragmentActivityMain.let { view ->
-//                        view.setPadding(
-//                            view.paddingLeft,
-//                            view.paddingTop,
-//                            view.paddingRight,
-//                            view.paddingRight + 56.toPx.toInt()
-//                        )
-//                    }
                 }
             }
+
+            // Draw behind navigation and status bars
+            window.setDecorFitsSystemWindows(false)
+
+            // Initialize TTS Engine
+            // TODO:  Make a class/service to handle player
+            viewModel.ttsEngine = initTTSEngine()
+
+            // Start authentication
+            AuthInit(viewModel, signInLauncher)
         }
 
         // Initialize Navigation
         initNavigation()
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-//        viewModel.ttsEngine.shutdown()
     }
 
     private fun initNavigation() {

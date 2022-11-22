@@ -14,5 +14,8 @@ data class Collection (
     var name: String = "",
     var icon: String = "",
     var order: Int = 100,
+
+    // Special
     var immortal: Boolean = false,
+    var filter: Map<String, Any> = mapOf()
 )

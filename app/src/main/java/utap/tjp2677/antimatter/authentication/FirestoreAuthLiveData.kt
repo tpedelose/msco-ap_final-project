@@ -13,9 +13,11 @@ class FirestoreAuthLiveData : LiveData<FirebaseUser?>() {
     fun updateUser() {
         value = firebaseAuth.currentUser
     }
+
     fun getCurrentUser() : FirebaseUser? {
         return firebaseAuth.currentUser
     }
+
     override fun onActive() {
         super.onActive()
         firebaseAuth.addAuthStateListener(authStateListener)

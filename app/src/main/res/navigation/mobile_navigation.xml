@@ -17,6 +17,9 @@
             app:exitAnim="@anim/nav_default_exit_anim"
             app:popEnterAnim="@anim/nav_default_pop_enter_anim"
             app:popExitAnim="@anim/nav_default_pop_exit_anim" />
+        <action
+            android:id="@+id/action_navigation_feed_to_navigation_collections"
+            app:destination="@id/navigation_collections" />
     </fragment>
 
     <fragment
@@ -25,12 +28,15 @@
         android:label="@string/title_collections"
         tools:layout="@layout/fragment_collections" >
         <action
-            android:id="@+id/action_navigation_collections_to_collectionViewFragment"
-            app:destination="@id/collectionViewFragment"
+            android:id="@+id/action_navigation_collections_to_navigation_feed"
+            app:destination="@id/navigation_feed"
             app:enterAnim="@anim/nav_default_enter_anim"
             app:exitAnim="@anim/nav_default_exit_anim"
             app:popEnterAnim="@anim/nav_default_pop_enter_anim"
-            app:popExitAnim="@anim/nav_default_pop_exit_anim" />
+            app:popExitAnim="@anim/nav_default_pop_exit_anim"
+            app:popUpTo="@+id/navigation_feed"
+            app:popUpToInclusive="true" />
+            <!--     https://stackoverflow.com/questions/52533721/disable-adding-fragment-to-backstack-in-navigation-architecture-component       -->
     </fragment>
 
     <fragment
@@ -48,20 +54,5 @@
             android:name="HideAppBar"
             android:defaultValue="true" />
     </fragment>
-
-    <fragment
-        android:id="@+id/collectionViewFragment"
-        android:name="utap.tjp2677.antimatter.ui.collections.CollectionViewFragment"
-        android:label="fragment_collection_view"
-        tools:layout="@layout/fragment_collection_view" >
-        <action
-            android:id="@+id/action_collectionViewFragment_to_article_view"
-            app:destination="@id/article_view"
-            app:enterAnim="@anim/nav_default_enter_anim"
-            app:exitAnim="@anim/nav_default_exit_anim"
-            app:popEnterAnim="@anim/nav_default_pop_enter_anim"
-            app:popExitAnim="@anim/nav_default_pop_exit_anim" />
-    </fragment>
-
 
 </navigation>

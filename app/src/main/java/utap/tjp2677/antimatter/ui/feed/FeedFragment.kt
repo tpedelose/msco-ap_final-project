@@ -8,16 +8,14 @@ import android.view.ViewGroup
 import androidx.fragment.app.*
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.*
-import com.google.android.material.color.MaterialColors
-import com.google.android.material.divider.MaterialDividerItemDecoration
-import utap.tjp2677.antimatter.MainActivity
 import utap.tjp2677.antimatter.MainViewModel
 import utap.tjp2677.antimatter.R
+import utap.tjp2677.antimatter.authentication.models.Collection
 import utap.tjp2677.antimatter.databinding.FragmentArticlesListBinding
 import utap.tjp2677.antimatter.databinding.FragmentFeedBinding
 import utap.tjp2677.antimatter.ui.lists.ArticleItemTouchHelper
 import utap.tjp2677.antimatter.ui.lists.ArticleListAdapter
-import utap.tjp2677.antimatter.utils.toPx
+
 
 class FeedFragment : Fragment() {
 
@@ -26,6 +24,8 @@ class FeedFragment : Fragment() {
     private val viewModel: MainViewModel by activityViewModels()
     private lateinit var adapter: ArticleListAdapter
     private lateinit var articlesListBinding: FragmentArticlesListBinding
+
+    private val fetchLimit = 10
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -42,21 +42,34 @@ class FeedFragment : Fragment() {
 
         initRecyclerView()
 
-        // Interaction Listeners
-        articlesListBinding.refresh.setOnRefreshListener {
-            viewModel.fetchArticles(limit=10)
+        // Observers
+        viewModel.observeOpenCollection().observe(viewLifecycleOwner) {
+            articlesListBinding.titleText.title = it.name
+            fetchWithFilter(it)
         }
 
-        // Observers
         viewModel.observeArticles().observe(viewLifecycleOwner) {
             adapter.submitList(it)
             articlesListBinding.refresh.isRefreshing = false
+            // Todo: Placeholder if no data in list
+        }
+
+        // Listeners
+        articlesListBinding.refresh.setOnRefreshListener {
+            val collection = viewModel.getOpenCollection()
+            fetchWithFilter(collection!!)
         }
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+    }
+
+    private fun fetchWithFilter(collection: Collection) {
+        val cid = collection.firestoreID
+        val isReadFilter = collection.filter["isRead"]?.let { it as Boolean }
+        viewModel.fetchArticles(cid, fetchLimit, isReadFilter)
     }
 
     private fun initRecyclerView() {
@@ -67,23 +80,27 @@ class FeedFragment : Fragment() {
             val article = viewModel.getArticleAt(position)
             viewModel.setOpenedArticle(article)
             findNavController().navigate(R.id.navigate_to_article_detail)
-//            viewModel.setArticleReadStatus(position, true)
+//            viewModel.setArticleReadStatus(position, true)  // Todo:  turn into setting
         }
         rv.adapter = adapter
 
         // Interactions
         val touchHelper = ItemTouchHelper(
-            ArticleItemTouchHelper(adapter, this::markAsReadCallback, this::addToReadLaterCallback)
+            ArticleItemTouchHelper(adapter, this::markAsReadCallback, this::toggleQueueCallback)
         )
         touchHelper.attachToRecyclerView(rv)
     }
 
     fun markAsReadCallback(position: Int) {
-        viewModel.toggleArticleReadStatus(position)
+        viewModel.toggleArticleReadStatus(position) {
+            // I guess this is the only way of doing a smooth update?
+            adapter.notifyItemChanged(position)
+        }
     }
 
-    fun addToReadLaterCallback(position: Int) {
-//        viewModel.toggleArticleInReadLater(position)
+    fun toggleQueueCallback(position: Int) {
+        val cid = viewModel.getOpenCollection()?.firestoreID
+        viewModel.addArticleToCollection(cid!!, "Queue", position)
     }
 
 }

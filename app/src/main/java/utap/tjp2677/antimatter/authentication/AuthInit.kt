@@ -23,7 +23,7 @@ class AuthInit(viewModel: MainViewModel, signInLauncher: ActivityResultLauncher<
             user.updateProfile(profileUpdates)
                 .addOnCompleteListener { task ->
                     if (task.isSuccessful) {
-//                        viewModel.updateUser()
+                        viewModel.updateUser()
                     } else {
                         Log.d(TAG,
                             "XXX profile update failed ${task.exception?.toString()}"
@@ -55,7 +55,7 @@ class AuthInit(viewModel: MainViewModel, signInLauncher: ActivityResultLauncher<
             // setIsSmartLockEnabled(false) solves some problems
         } else {
             Log.d(TAG, "XXX user ${user.displayName} email ${user.email}")
-//            viewModel.updateUser()
+            viewModel.updateUser()
         }
     }
 }
