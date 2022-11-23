@@ -55,80 +55,25 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent">
 
+
+            <!--    Collections    -->
             <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="12dp">
 
-                <!--    Following    -->
-                <LinearLayout
+                <androidx.recyclerview.widget.RecyclerView
+                    android:nestedScrollingEnabled="false"
+                    android:id="@+id/collection_list"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:paddingTop="12dp"
-                    android:paddingBottom="12dp">
-
-                    <TextView
-                        android:text="Following"
-                        android:textAppearance="?attr/textAppearanceTitleLarge"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:paddingStart="12dp"
-                        android:paddingEnd="12dp"
-                        android:layout_marginBottom="8dp"/>
-
-                    <androidx.recyclerview.widget.RecyclerView
-                        android:clipToPadding="false"
-                        android:id="@+id/follow_list"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:paddingStart="12dp"
-                        android:paddingEnd="12dp"
-                        android:orientation="horizontal"
-                        android:adjustViewBounds="true"
-                        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-                        tools:orientation="horizontal"
-                        tools:listitem="@layout/follow_item"
-                        tools:itemCount="5"
-                        />
-
-                </LinearLayout>
-
-
-                <Button
-                    android:id="@+id/test_button"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Press" />
-
-                <!--    Collections    -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="12dp">
-
-                    <TextView
-                        android:text="Collections"
-                        android:textAppearance="?attr/textAppearanceTitleLarge"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="8dp"/>
-
-                    <androidx.recyclerview.widget.RecyclerView
-                        android:nestedScrollingEnabled="false"
-                        android:id="@+id/collection_list"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
-                        app:spanCount="2"
-                        tools:orientation="vertical"
-                        tools:listitem="@layout/collection_item"
-                        tools:itemCount="6" />
-
-                </LinearLayout>
-
+                    app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
+                    app:spanCount="2"
+                    tools:orientation="vertical"
+                    tools:listitem="@layout/collection_item"
+                    tools:itemCount="10" />
 
             </LinearLayout>
 

@@ -10,14 +10,11 @@ import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.GridLayoutManager.SpanSizeLookup
-import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.divider.MaterialDividerItemDecoration
-import utap.tjp2677.antimatter.MainActivity
 import utap.tjp2677.antimatter.MainViewModel
 import utap.tjp2677.antimatter.R
 import utap.tjp2677.antimatter.databinding.FragmentCollectionsBinding
 import utap.tjp2677.antimatter.ui.lists.CollectionListAdapter
-import utap.tjp2677.antimatter.ui.lists.FollowListAdapter
 import utap.tjp2677.antimatter.utils.toPx
 
 
@@ -26,7 +23,6 @@ class CollectionsFragment : Fragment() {
     private var _binding: FragmentCollectionsBinding? = null
     private val binding get() = _binding!! // This property is only valid between onCreateView and onDestroyView.
     private val viewModel: MainViewModel by activityViewModels()
-    private var followListAdapter: FollowListAdapter? = null
     private var collectionListAdapter: CollectionListAdapter? = null
 
     override fun onCreateView(
@@ -42,29 +38,17 @@ class CollectionsFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         if (savedInstanceState == null) {
-            viewModel.fetchSubscriptions()
             viewModel.fetchCollections()
         }
 
-        initSubscriptionsRecyclerView()
         initCollectionsRecyclerView()
 
         // Interaction Listeners
-        binding.testButton.setOnClickListener {
-            viewModel.openSettings(it.context)
-        }
-
         binding.refresh.setOnRefreshListener {
-            viewModel.fetchSubscriptions()
             viewModel.fetchCollections()
         }
 
         // Observers
-        viewModel.observeSubscriptions().observe(viewLifecycleOwner) {
-            followListAdapter?.submitList(it)
-            binding.refresh.isRefreshing = false
-        }
-
         viewModel.observeCollections().observe(viewLifecycleOwner) {
             collectionListAdapter?.submitList(it)
             binding.refresh.isRefreshing = false
@@ -74,19 +58,6 @@ class CollectionsFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
-    }
-
-    private fun initSubscriptionsRecyclerView() {
-        val rv = binding.followList
-        followListAdapter = FollowListAdapter(viewModel) {}
-        rv.adapter = followListAdapter
-
-        val dividerThickness = 6.toPx.toInt()
-
-        val divider = MaterialDividerItemDecoration(requireContext(), LinearLayoutManager.HORIZONTAL)
-        divider.dividerThickness = dividerThickness
-        divider.dividerColor = Color.TRANSPARENT
-        rv.addItemDecoration(divider)
     }
 
     private fun initCollectionsRecyclerView() {
