@@ -14,14 +14,15 @@
         android:layout_height="match_parent">
 
         <ImageView
-            android:id="@+id/image_container"
+            android:id="@+id/background_image"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:scaleType="centerCrop"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"/>
+            app:layout_constraintBottom_toBottomOf="parent"
+            android:contentDescription="TODO" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -36,6 +37,7 @@
         android:paddingStart="0dp">
 
         <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/foreground_image"
             android:layout_width="36dp"
             android:layout_height="36dp"
             android:layout_marginStart="8dp"
@@ -71,30 +73,25 @@
                 android:id="@+id/publication"
                 android:text="Publication Name"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                />
+                android:layout_height="match_parent" />
 
         </LinearLayout>
 
-        <LinearLayout
-            android:id="@+id/controls"
+        <com.google.android.material.button.MaterialButton
+            style="?attr/materialIconButtonOutlinedStyle"
+            android:id="@+id/open_article_button"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" >
+            android:layout_height="wrap_content"
+            android:tooltipText="Go to Article"
+            app:icon="@drawable/ic_outline_call_made_24" />
 
-            <com.google.android.material.button.MaterialButton
-                style="?attr/materialIconButtonStyle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                app:icon="@drawable/ic_outline_replay_24" />
-
-            <com.google.android.material.button.MaterialButton
-                style="?attr/materialIconButtonFilledStyle"
-                android:id="@+id/playback_button"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                app:icon="@drawable/ic_outline_play_arrow_24" />
-
-        </LinearLayout>
+        <com.google.android.material.button.MaterialButton
+            style="?attr/materialIconButtonFilledStyle"
+            android:id="@+id/playback_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:tooltipText="Pause"
+            app:icon="@drawable/ic_outline_play_arrow_24" />
 
     </LinearLayout>
 

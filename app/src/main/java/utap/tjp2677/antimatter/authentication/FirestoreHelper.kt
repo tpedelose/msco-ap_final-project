@@ -299,7 +299,6 @@ class FirestoreHelper(private val fbUser: FirebaseUser) {
     }
 
 
-
     fun Query.getCacheBeforeServer() {
         TODO()
     }

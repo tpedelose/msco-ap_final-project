@@ -61,6 +61,7 @@ class ArticleFragment : Fragment() {
 
         // Interactions
         binding.content.movementMethod = LinkMovementMethod.getInstance()
+
         binding.content.customSelectionActionModeCallback = SelectionCallback(binding.content) {
             textView, actionMode, menuItem -> Boolean
                 return@SelectionCallback when (menuItem?.itemId) {
@@ -100,15 +101,12 @@ class ArticleFragment : Fragment() {
         }
 
         viewModel.observeIsPlayingStatus().observe(viewLifecycleOwner) { isPlaying ->
-            when (isPlaying && viewModel.openArticleIsLoadedToPlayer()) {
-                true -> {
-                    binding.header.playArticle.text = "Pause"
-                    binding.header.playArticle.setIconResource(R.drawable.ic_outline_pause_24)
-                }
-                false -> {
-                    binding.header.playArticle.text = "Listen"
-                    binding.header.playArticle.setIconResource(R.drawable.ic_outline_play_arrow_24)
-                }
+            if (isPlaying && viewModel.openArticleIsLoadedToPlayer()) {
+                binding.header.playArticle.text = "Pause"
+                binding.header.playArticle.setIconResource(R.drawable.ic_outline_pause_24)
+            } else {
+                binding.header.playArticle.text = "Listen"
+                binding.header.playArticle.setIconResource(R.drawable.ic_outline_play_arrow_24)
             }
         }
 
@@ -138,8 +136,9 @@ class ArticleFragment : Fragment() {
         // Fetch images
         article.publicationIconLink?.let { logo: String ->
             glideFetch(logo, binding.header.publicationImage)
-        }
+        } ?: binding.header.publicationImage.setBackgroundResource(R.drawable.ic_outline_newspaper_24)
 
+        // Todo:  Add placeholders?
         article.image?.let {
             glideFetch(it, binding.heroImage)
         } ?: binding.heroImage.setImageDrawable(null)
@@ -212,7 +211,7 @@ class ArticleFragment : Fragment() {
     }
 
     private fun createAnnotation(text: String, start: Int, end: Int) {
-        if (start == end) { return }  // reject
+        if (start == end) { return }  // reject when annotation would be zero length
 
         // Todo? Put collectionId in article?
         val cid = viewModel.getOpenCollection()?.firestoreID
@@ -224,16 +223,16 @@ class ArticleFragment : Fragment() {
 
     private fun annotationClickCallbackHandler(
         annotation: Annotation, mode: ActionMode, menuItem: MenuItem): Boolean {
-        val TAG = "annotationClickCallbackHandler"
+
         val article: Article? = viewModel.getOpenArticle()
-        val collection: Collection? = viewModel.getOpenCollection()
 
         return when (menuItem.itemId) {
             R.id.annotation_delete -> {
-                collection ?: return false
                 article ?: return false
-                Log.d(TAG,
-                    "collectionId; ${collection.firestoreID}, articleId: ${article.firestoreID}, firestoreId: ${annotation.firestoreID}")
+
+                val collection: Collection? = viewModel.getOpenCollection()
+                collection ?: return false
+
                 viewModel.deleteAnnotation(
                     collection.firestoreID,
                     article.firestoreID,
@@ -277,61 +276,62 @@ class SelectionCallback(private val textView: TextView, val clickHandler: (TextV
     }
 }
 
-class AnnotationSpan(private val backgroundColor: Int, private val textColor: Int? = null,
-                     private val annotation: Annotation)
+class AnnotationSpan(private val backgroundColor: Int, private val annotation: Annotation)
     : ClickableSpan()  {
-
-    private val TAG = "Annotation Span"
 
     var clickHandler: ((Annotation, ActionMode, MenuItem) -> Boolean)? = null
 
     override fun onClick(p0: View) {
-        // https://stackoverflow.com/questions/11905486/how-get-coordinate-of-a-clickablespan-inside-a-textview
 
+        // Skip if we don't have a TextView
         if (p0 !is TextView) { return }
-
-        val (l, t, r, b) = getPositionOfActionMode(p0)
 
         clickHandler?.let {
             val clickCallback = AnnotationClickCallback() ACC@{ mode, menuItem ->
                 return@ACC it(annotation, mode, menuItem)
             }
-            clickCallback.startActionMode(p0, contentLeft = l, contentRight = r)
-        }
-    }
-
-    private fun getPositionOfActionMode(textView: TextView): Array<Int> {
-
-        val spanner = (textView.text as Spanned)
-
-//        spanner.getSpans(0, textView.text.length, this)
-
-        val start = spanner.getSpanStart(this)
-        val end = spanner.getSpanEnd(this)
-        Log.d(TAG, "$start, $end")
-
-        textView.layout.let {
-            val xMin: Float = it.getPrimaryHorizontal(start)
-            val xMax: Float = it.getPrimaryHorizontal(end)
-            Log.d(TAG, "$xMin, $xMax")
-
-            val lineStartOffset = it.getLineForOffset(start)
-            val lineEndOffset = it.getLineForOffset(end)
-
-            val left = xMin.toInt()
-            val right = xMax.toInt()
-            val top = 0
-            val bottom = 0
-
-            return arrayOf(left, top, right, bottom)
+            val rect = getActionModeExcludeZone(p0)
+            clickCallback.startActionMode(p0, rect.left, rect.top, rect.right, rect.bottom)
         }
     }
 
     override fun updateDrawState(ds: TextPaint) {
         ds.bgColor = backgroundColor
-        textColor?.let {
-            ds.color = textColor
+    }
+
+    private fun getActionModeExcludeZone(textView: TextView): Rect {
+        // Most of the following was based off of the answer in this StackOverflow post:
+        // https://stackoverflow.com/questions/11905486/how-get-coordinate-of-a-clickablespan-inside-a-textview
+
+        val excludeZone = Rect()
+
+        // Get index of span's start/end characters in full text
+        val spanned = (textView.text as Spanned)
+        val start = spanned.getSpanStart(this)
+        val end = spanned.getSpanEnd(this)
+
+        // Get line numbers of text in span
+        val startLine: Int = textView.layout.getLineForOffset(start)
+        val endLine: Int = textView.layout.getLineForOffset(end)
+
+        // Initially set excludeZone to rect of first line
+        textView.getLineBounds(startLine, excludeZone)
+
+        if (startLine != endLine) {  // i.e. If we have multiline text
+            val rect2 = Rect()
+            textView.getLineBounds(endLine, rect2)
+
+            // Set bottom of excludeZone to include final line of text
+            excludeZone.bottom = rect2.bottom
+        } else {
+            // Set excludeZone left/right based on line start/end characters when single line
+            excludeZone.left = (textView.layout.getPrimaryHorizontal(start)
+                    + textView.compoundPaddingLeft + textView.scrollX).toInt()
+            excludeZone.right = (textView.layout.getPrimaryHorizontal(end)
+                    + textView.compoundPaddingLeft + textView.scrollX).toInt()
         }
+
+        return excludeZone
     }
 }
 
@@ -344,11 +344,9 @@ class AnnotationClickCallback(val clickHandler: (ActionMode, MenuItem) -> Boolea
     private var contentTop: Int = 0
     private var contentRight: Int = 0
     private var contentBottom: Int = 0
-    private var aMode: ActionMode? = null
 
     override fun onCreateActionMode(mode: ActionMode, menu: Menu): Boolean {
         mode.menuInflater?.inflate(R.menu.article_annotation_click, menu)
-        aMode = mode
         return true
     }
 
@@ -363,7 +361,6 @@ class AnnotationClickCallback(val clickHandler: (ActionMode, MenuItem) -> Boolea
     }
 
     override fun onDestroyActionMode(mode: ActionMode) {
-        aMode = null
     }
 
     override fun onGetContentRect(mode: ActionMode, view: View, outRect: Rect) {
@@ -371,7 +368,7 @@ class AnnotationClickCallback(val clickHandler: (ActionMode, MenuItem) -> Boolea
     }
 
     fun startActionMode(view: View, contentLeft: Int = 0, contentTop: Int = 0,
-                        contentRight: Int = view.width, contentBottom: Int = view.height,
+        contentRight: Int = view.width, contentBottom: Int = view.height,
     ) {
         this.contentLeft = contentLeft
         this.contentTop = contentTop

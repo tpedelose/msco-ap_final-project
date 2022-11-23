@@ -5,6 +5,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.isGone
 import androidx.fragment.app.*
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.*
@@ -40,25 +41,39 @@ class FeedFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        initRecyclerView()
-
         // Observers
         viewModel.observeOpenCollection().observe(viewLifecycleOwner) {
+            Log.d("HERE", it.toString())
             articlesListBinding.titleText.title = it.name
+            articlesListBinding.refresh.isRefreshing = true
             fetchWithFilter(it)
         }
 
         viewModel.observeArticles().observe(viewLifecycleOwner) {
+            if (it.isNotEmpty()) {
+                articlesListBinding.noDataPlaceholder.visibility = View.GONE
+                articlesListBinding.feedList.visibility = View.VISIBLE
+            }
+            else {
+                articlesListBinding.feedList.visibility = View.GONE
+                articlesListBinding.noDataPlaceholder.visibility = View.VISIBLE
+            }
             adapter.submitList(it)
             articlesListBinding.refresh.isRefreshing = false
-            // Todo: Placeholder if no data in list
         }
+
+        // Todo:  "Refreshing" LiveData status object
 
         // Listeners
         articlesListBinding.refresh.setOnRefreshListener {
             val collection = viewModel.getOpenCollection()
-            fetchWithFilter(collection!!)
+            collection?.let {
+                fetchWithFilter(collection)
+            }
         }
+
+        // Initialize data
+        initRecyclerView()
     }
 
     override fun onDestroyView() {

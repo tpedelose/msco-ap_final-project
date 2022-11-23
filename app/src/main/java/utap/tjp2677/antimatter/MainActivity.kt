@@ -48,9 +48,9 @@ class MainActivity : AppCompatActivity() {
                 // Fetch starting data
                 Log.d("ObserveUser", "${it.uid} logged in")
                 viewModel.initHelper()
-                viewModel.fetchCollectionAsOpen("Inbox")
-//                viewModel.fetchCollections()
-//                viewModel.fetchArticles("Inbox", limit=10)
+                viewModel.fetchCollectionAsOpen("Inbox") // Todo:  title doesn't update on first load?
+                viewModel.fetchCollections()
+                viewModel.fetchSubscriptions()
             }
 
             // Watch for playing article
@@ -59,7 +59,9 @@ class MainActivity : AppCompatActivity() {
                 if (it == null) { return@observe }
 
                 // ignore if fragment already exists
+                // Todo:  I think this is causing it to not be recreated in some cases
                 val frag = supportFragmentManager.findFragmentById(R.id.fragment_player) as? PlayerFragment
+//                Log.d("Create player?","Player exist?: $frag")
                 if (frag != null) { return@observe }
 
                 // Else, create the fragment!

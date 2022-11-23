@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.os.Bundle
 import android.util.Log
+import android.view.HapticFeedbackConstants
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -17,6 +18,7 @@ import androidx.navigation.fragment.findNavController
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.MultiTransformation
 import com.bumptech.glide.load.engine.DiskCacheStrategy
+import com.bumptech.glide.load.resource.bitmap.RoundedCorners
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions.withCrossFade
 import com.bumptech.glide.request.RequestOptions
 import com.bumptech.glide.request.transition.DrawableCrossFadeFactory
@@ -35,6 +37,11 @@ class PlayerFragment : Fragment() {
     private var _binding: FragmentPlayerBinding? = null
     private val binding get() = _binding!!  // This property is only valid between onCreateView and onDestroyView.
     private val viewModel: MainViewModel by activityViewModels()
+
+    private val multiTransform = MultiTransformation<Bitmap>(
+        BlurTransformation(30, 5),
+        BrightnessFilterTransformation(0.3F)
+    )
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -56,29 +63,37 @@ class PlayerFragment : Fragment() {
             binding.title.isSelected = true  // To make the marquee move
             binding.publication.text = it.publicationName
 
+            // Attempt transition between backgrounds
+            val transformationFactory = DrawableCrossFadeFactory.Builder()
+                .setCrossFadeEnabled(true).build()
+
             it.image?.let { imagePath ->
-                val multiTransform = MultiTransformation<Bitmap>(
-                    BlurTransformation(30, 5),
-                    BrightnessFilterTransformation(0.3F)
-                )
-
-                val transformationFactory = DrawableCrossFadeFactory.Builder()
-                    .setCrossFadeEnabled(true).build()
-
                 Glide.with(binding.root.context)
                     .load(imagePath)
                     .transition(withCrossFade(transformationFactory))
                     .diskCacheStrategy(DiskCacheStrategy.ALL)
                     .apply(RequestOptions.bitmapTransform(multiTransform))
-                    .into(binding.imageContainer)
+                    .into(binding.backgroundImage)
+            } ?: binding.backgroundImage.setImageDrawable(null)  // Clear background image
+
+            it.publicationIconLink?.let { iconPath ->
+                Glide.with(binding.root.context)
+                    .load(iconPath)
+                    .transition(withCrossFade(transformationFactory))
+                    .diskCacheStrategy(DiskCacheStrategy.ALL)
+                    .transform(RoundedCorners (20.toDp.toInt()))
+                    .into(binding.foregroundImage)
             }
         }
 
 
         viewModel.observeIsPlayingStatus().observe(viewLifecycleOwner) { isPlaying ->
-            when (isPlaying) {
-                true -> binding.playbackButton.setIconResource(R.drawable.ic_outline_pause_24)
-                false -> binding.playbackButton.setIconResource(R.drawable.ic_outline_play_arrow_24)
+            if (isPlaying) {
+                binding.playbackButton.setIconResource(R.drawable.ic_outline_pause_24)
+                binding.playbackButton.tooltipText = "Pause"
+            } else {
+                binding.playbackButton.setIconResource(R.drawable.ic_outline_play_arrow_24)
+                binding.playbackButton.tooltipText = "Play"
             }
         }
 
@@ -91,10 +106,9 @@ class PlayerFragment : Fragment() {
             }
         }
 
-
-        // Must include this to keep click-through to behind view
-        // and to capture motion events other than ACTION_DOWN
-        binding.root.setOnClickListener {
+        // Would have been any click on the player, but there is some funkiness with the
+        // click listener when using the PlayerTouchHandler implementation
+        binding.openArticleButton.setOnClickListener {
             val noNavigateClass = "utap.tjp2677.antimatter:id/article_view"
             val fragClass = findNavController().currentDestination?.displayName
 
@@ -115,6 +129,14 @@ class PlayerFragment : Fragment() {
             }
         }
 
+
+        // Must include this to keep click-through to behind view
+        // and to capture motion events other than ACTION_DOWN
+        binding.root.setOnClickListener {
+
+        }
+
+        // Handle swipe gestures on root view
         binding.root.setOnTouchListener(
             PlayerTouchHandler {
                 viewModel.stopPlaying()
@@ -156,6 +178,7 @@ class PlayerTouchHandler(val onSwipeCallback: ((direction: SwipeDirection) -> Un
     private var swipeThreshold: Float = 0.45f
     private var isSwiped: Boolean = false
     private var isSwipedDirection: SwipeDirection = SwipeDirection.START
+    private var hapticsTriggered = false
 
     private var xDisplacementBuffer = 24.toDp
     private var yDisplacementBuffer = 24.toDp
@@ -222,21 +245,34 @@ class PlayerTouchHandler(val onSwipeCallback: ((direction: SwipeDirection) -> Un
 
                 // Enable for up/down
 //                dY = event.rawY - y0!!
-//                view.y = viewY0?.plus(dY)!!  // Enab
+//                view.y = viewY0?.plus(dY)!!
 
-                Log.d(TAG, "dX: $dX; dY: $dY")
+                Log.v(TAG, "dX: $dX; dY: $dY")
 
                 // Check for swipe threshold
                 if (abs(dX) >= view.width * swipeThreshold) {
+                    // User has swiped past threshold to dismiss
                     isSwiped = true
                     isSwipedDirection = when (dX < 0) {
                         true -> SwipeDirection.START
                         false -> SwipeDirection.END
                     }
                     Log.d(TAG, "$dX >= ${view.width} * $swipeThreshold :: ${isSwipedDirection.name}")
+
+                    if (view.isHapticFeedbackEnabled && !hapticsTriggered) {
+                        // Let user know that it dismiss will trigger
+                        view.performHapticFeedback(HapticFeedbackConstants.GESTURE_START)
+                        hapticsTriggered = true
+                    }
                 } else if (isSwiped) {
+                    // User has swiped back to under threshold
                     isSwiped = false
                     isSwipedDirection = SwipeDirection.START
+                    if (view.isHapticFeedbackEnabled && hapticsTriggered) {
+                        // Let user know that dismiss won't trigger
+                        view.performHapticFeedback(HapticFeedbackConstants.GESTURE_END)
+                    }
+                    hapticsTriggered = false
                 }
             }
         }
