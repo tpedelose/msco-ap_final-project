@@ -92,11 +92,6 @@ open class ArticleListAdapter(val onClickCallback: (Int) -> Unit)
     }
 }
 
-
-class ItemTouchHelperOverride(callback: Callback) : ItemTouchHelper(callback) {
-
-}
-
 open class ArticleItemTouchHelper(
     private val adapter: ArticleListAdapter,
     val onSwipeToStart: (Int) -> Unit,
@@ -161,6 +156,7 @@ open class ArticleItemTouchHelper(
             .withEndAction {
 //                 adapter.notifyItemChanged(viewHolder.absoluteAdapterPosition)  // Plays animations...
                 adapter.notifyDataSetChanged()  // Inefficient, but no animation
+                // Todo:  get rid of this now?
             }
             .start()
     }
