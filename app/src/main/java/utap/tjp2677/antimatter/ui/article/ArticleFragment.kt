@@ -1,6 +1,7 @@
 package utap.tjp2677.antimatter.ui.article
 
 import android.content.Context
+import android.content.DialogInterface
 import android.graphics.Color
 import android.graphics.Rect
 import android.os.Bundle
@@ -21,6 +22,7 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.bitmap.RoundedCorners
 import com.bumptech.glide.request.RequestOptions
 import com.google.android.material.color.MaterialColors
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import utap.tjp2677.antimatter.MainViewModel
 import utap.tjp2677.antimatter.R
 import utap.tjp2677.antimatter.authentication.models.Annotation
@@ -163,14 +165,37 @@ class ArticleFragment : Fragment() {
         binding.bottomAppBar.addMenuProvider(
             object : MenuProvider {
                 override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
-//                    menuInflater.inflate(R.menu.bottom_app_bar_article, menu)
                 }
 
                 override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
                     val article = viewModel.getOpenArticle()
+
                     return when (menuItem.itemId) {
-                        R.id.add -> {true}  // TODO: Handle favorite icon press
-                        R.id.more -> {true}  // TODO: Handle more item (inside overflow menu) press
+                        R.id.more -> { true }  // TODO: Handle more item (inside overflow menu) press
+                        R.id.add -> {
+                            val userCollections = viewModel.getUserCollections()
+                            val names = (userCollections.map { "${it.icon} ${it.name}" }).toTypedArray()
+                            val checked = BooleanArray(names.size)
+                            // TODO: check collections already in.
+                            //      Requires rewrite of Firebase and FirebaseHelper
+//                            val checked = (userCollections.map { it.name }).toTypedArray()
+                            val checkedList = checked.toMutableList()
+
+                            MaterialAlertDialogBuilder(binding.root.context)
+                                .setTitle("Add to collection?")
+                                .setMultiChoiceItems(names, checked) { dialog, which, isChecked ->
+                                    checkedList[which] = isChecked
+                                }
+                                .setNegativeButton("Cancel") { _ /*dialog*/, _ /*which*/->
+                                    // Do nothing
+                                }
+                                .setPositiveButton("Submit") { dialog, which ->
+                                    Log.d("Checked", names.toList().toString())
+                                    Log.d("Checked", checkedList.toString())
+                                }
+                                .show()
+                            true
+                        }
                         R.id.share -> {
                             article?.link?.let {
                                 val messageTitle = "${article.title} - ${article.publicationName}"

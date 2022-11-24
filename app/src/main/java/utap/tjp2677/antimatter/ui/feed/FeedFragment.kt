@@ -5,6 +5,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toolbar
 import androidx.core.view.isGone
 import androidx.fragment.app.*
 import androidx.navigation.fragment.findNavController
@@ -43,9 +44,8 @@ class FeedFragment : Fragment() {
 
         // Observers
         viewModel.observeOpenCollection().observe(viewLifecycleOwner) {
-            Log.d("HERE", it.toString())
-            articlesListBinding.titleText.title = it.name
             articlesListBinding.refresh.isRefreshing = true
+            articlesListBinding.titlebarCollapse.title = it.name
             fetchWithFilter(it)
         }
 
@@ -61,8 +61,6 @@ class FeedFragment : Fragment() {
             adapter.submitList(it)
             articlesListBinding.refresh.isRefreshing = false
         }
-
-        // Todo:  "Refreshing" LiveData status object
 
         // Listeners
         articlesListBinding.refresh.setOnRefreshListener {

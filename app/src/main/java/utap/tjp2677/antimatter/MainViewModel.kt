@@ -17,6 +17,7 @@ import utap.tjp2677.antimatter.authentication.models.Publication
 import utap.tjp2677.antimatter.authentication.models.Collection
 import utap.tjp2677.antimatter.authentication.models.Annotation
 import utap.tjp2677.antimatter.ui.settings.SettingsActivity
+import kotlin.math.max
 
 
 class MainViewModel : ViewModel() {
@@ -47,7 +48,6 @@ class MainViewModel : ViewModel() {
 
     private var articleList = MutableLiveData<List<Article>>()
     private var openArticle = MutableLiveData<Article>()
-
 
     /* --- Create --- */
 
@@ -128,10 +128,21 @@ class MainViewModel : ViewModel() {
     /*                 Collections                */
     /* ========================================== */
 
-    private var userCollections = MutableLiveData<List<Collection>>()
+    private var collectionList = MutableLiveData<List<Collection>>()
     private var openCollection = MutableLiveData<Collection>()
 
     /* --- Create --- */
+    private val USER_ORDER_MIN = 100
+    fun createCollection(name: String, icon: String, order: Int? = null) {
+        collectionList.value?.let {
+            // Get max order in collections if @order is null
+            val maxOrder = order ?: it.maxBy { col -> col.order }.order
+            // Set minimum of order
+            val mOrder = max(maxOrder + 1, USER_ORDER_MIN)
+            // Submit to firebase
+            firestoreHelper.createCollection(collectionList, name, icon, mOrder)
+        }
+    }
 
     /* --- Read --- */
     fun fetchCollectionAsOpen(collectionId: String) {
@@ -139,15 +150,29 @@ class MainViewModel : ViewModel() {
     }
 
     fun fetchCollections() {
-        firestoreHelper.fetchCollections(userCollections)
+        firestoreHelper.fetchCollections(collectionList)
     }
 
     fun observeCollections(): LiveData<List<Collection>> {
-        return userCollections
+        return collectionList
     }
 
     fun getCollectionAt(position: Int): Collection {
-        return userCollections.value!![position]
+        return collectionList.value!![position]
+    }
+
+    fun getUserCollections(): List<Collection> {
+        var list = listOf<Collection>()
+        collectionList.value?.let {
+            list = it.mapNotNull { col ->
+                // Filter not-user-created collections
+                when (col.immortal) {
+                    true -> null
+                    false -> col
+                }
+            }
+        }
+        return list
     }
 
     fun observeOpenCollection(): LiveData<Collection> {
@@ -178,6 +203,14 @@ class MainViewModel : ViewModel() {
     }
 
     /* --- Destroy --- */
+
+    fun deleteCollection(collectionId: String) {
+        firestoreHelper.deleteCollection(collectionList, collectionId) {
+            collectionList.value?.let {
+                setOpenCollection(it[0])
+            }
+        }
+    }
 
 
 
@@ -217,6 +250,10 @@ class MainViewModel : ViewModel() {
 
     fun setPlayerIsActive(active: Boolean) {
         playerIsActive.value = active
+    }
+
+    fun observePlayerIsActive(): LiveData<Boolean> {
+        return playerIsActive
     }
 
     fun observeNowPlaying(): LiveData<Article?> {

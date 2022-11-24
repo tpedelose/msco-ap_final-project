@@ -271,6 +271,54 @@ class FirestoreHelper(private val fbUser: FirebaseUser) {
         }
     }
 
+    fun createCollection(collectionList: MutableLiveData<List<Collection>>,
+                         name: String, icon: String, order: Int) {
+        val TAG = "CreateCollection"
+
+        val collectionRef = db.collection(
+            "${userPrefix}/collections/")
+
+        val annotationData = hashMapOf(
+            "name" to name,
+            "icon" to icon,
+            "order" to order
+        )
+
+        collectionRef
+            .document()
+            .set(annotationData)
+            .addOnSuccessListener {
+                Log.d(TAG, "DocumentSnapshot successfully written!")
+                fetchCollections(collectionList)
+            }
+            .addOnFailureListener {
+                    e -> Log.w(TAG, "Error writing document", e)
+                fetchCollections(collectionList)
+            }
+    }
+
+    fun deleteCollection (collectionList: MutableLiveData<List<Collection>>,
+                          collectionId: String, onSuccessCallback: () -> Unit) {
+        val TAG = "DeleteCollection"
+
+        val collectionRef = db.collection(
+            "${userPrefix}/collections/")
+
+        collectionRef
+            .document(collectionId)
+            .delete()
+            .addOnSuccessListener {
+                Log.d(TAG, "DocumentSnapshot successfully deleted!")
+                fetchCollections(collectionList)
+                onSuccessCallback()
+            }
+            .addOnFailureListener {
+                    e ->
+                Log.w(TAG, "Error deleting document", e)
+                fetchCollections(collectionList)
+            }
+    }
+
     fun removeArticleFromCollection(articleId: String, collectionId: String) {
 
     }

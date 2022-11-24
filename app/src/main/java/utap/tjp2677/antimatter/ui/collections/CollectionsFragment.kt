@@ -2,17 +2,28 @@ package utap.tjp2677.antimatter.ui.collections
 
 import android.graphics.Color
 import android.os.Bundle
+import android.text.InputFilter
+import android.text.Layout
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewGroup.MarginLayoutParams
+import android.widget.EditText
+import android.widget.FrameLayout
+import android.widget.RelativeLayout
+import androidx.core.view.marginBottom
+import androidx.core.view.updateLayoutParams
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.GridLayoutManager.SpanSizeLookup
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.divider.MaterialDividerItemDecoration
 import utap.tjp2677.antimatter.MainViewModel
 import utap.tjp2677.antimatter.R
+import utap.tjp2677.antimatter.databinding.EditCollectionViewBinding
 import utap.tjp2677.antimatter.databinding.FragmentCollectionsBinding
 import utap.tjp2677.antimatter.ui.lists.CollectionListAdapter
 import utap.tjp2677.antimatter.utils.toPx
@@ -24,6 +35,7 @@ class CollectionsFragment : Fragment() {
     private val binding get() = _binding!! // This property is only valid between onCreateView and onDestroyView.
     private val viewModel: MainViewModel by activityViewModels()
     private var collectionListAdapter: CollectionListAdapter? = null
+    private var initialFABBottomMargin: Int? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -48,11 +60,56 @@ class CollectionsFragment : Fragment() {
             viewModel.fetchCollections()
         }
 
+        binding.extendedFab.setOnClickListener {
+
+            val dialogBinding = EditCollectionViewBinding.inflate(LayoutInflater.from(binding.root.context), null, false)
+            dialogBinding.emojiField.editText?.filters = arrayOf(
+                InputFilter.LengthFilter(1),
+                // TODO: Emoji Filter
+            )
+
+            MaterialAlertDialogBuilder(binding.root.context)
+                // TODO? Check if collection with name already exists
+                .setTitle("Create collection")
+                .setView(dialogBinding.root)
+                .setNegativeButton("Cancel") { _ /*dialog*/, _ /*which*/ ->
+                    // Do nothing
+                }
+                .setPositiveButton("Create") { _ /*dialog*/, _ /*which*/ ->
+                    // Create a Collection
+                    val collectionName = dialogBinding.textField.editText?.text.toString()
+                    val emojiIcon = dialogBinding.emojiField.editText?.text.toString()
+                    viewModel.createCollection(collectionName, emojiIcon)
+                }
+                .show()
+        }
+
         // Observers
         viewModel.observeCollections().observe(viewLifecycleOwner) {
             collectionListAdapter?.submitList(it)
             binding.refresh.isRefreshing = false
         }
+
+        viewModel.observePlayerIsActive().observe(viewLifecycleOwner) { isActive ->
+            // Keep the FAB from behind the Player
+            binding.extendedFab.updateLayoutParams<MarginLayoutParams> {
+                if (isActive) {
+                    // Give add extra height
+                    setMargins(leftMargin, topMargin, rightMargin,
+                        (bottomMargin + (56+8).toPx).toInt())
+                    // Todo: avoid hard-setting of player height + margin
+                    // Todo: Give recyclerview more margin
+                } else {
+                    // Reset
+                    initialFABBottomMargin?.let {
+                        setMargins(leftMargin, topMargin, rightMargin, it)
+                    }
+                }
+            }
+        }
+
+        initialFABBottomMargin = binding.extendedFab.marginBottom
+
     }
 
     override fun onDestroyView() {
