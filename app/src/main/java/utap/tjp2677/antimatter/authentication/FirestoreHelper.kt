@@ -4,6 +4,9 @@ import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.*
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.ktx.firestoreSettings
 import utap.tjp2677.antimatter.authentication.models.Article
 import utap.tjp2677.antimatter.authentication.models.Publication
@@ -39,7 +42,7 @@ class FirestoreHelper(private val fbUser: FirebaseUser) {
     }
     private val DEFAULT_ORDERING = Query.Direction.DESCENDING
 
-    fun minMaxArticleLimit(limit: Int?): Long {
+    private fun minMaxArticleLimit(limit: Int?): Long {
         return when(limit) {
             null -> FETCH_DEFAULT
             else -> min(limit, FETCH_LIMIT)
@@ -47,9 +50,6 @@ class FirestoreHelper(private val fbUser: FirebaseUser) {
     }
 
     /////////////////////////////////////////////////////////////
-    // Interact with Firestore db
-    // https://firebase.google.com/docs/firestore/query-data/get-data
-    //
     // If we want to listen for real time updates use this
     // .addSnapshotListener { querySnapshot, firebaseFirestoreException ->
     // But be careful about how listener updates live data
@@ -61,10 +61,15 @@ class FirestoreHelper(private val fbUser: FirebaseUser) {
 
     fun fetchArticles(articleList: MutableLiveData<List<Article>>,
                       collection: Collection, limit: Int?, start: Int, end: Int) {
-        val TAG = "FetchArticles"
         // TODO!!!  Pagination, Order, Filter
+        
+        val TAG = "FetchArticles"
+        val isReadKey = "isRead"
+        val collectionsKey = "collections"
+        val articlesKey = "articles"
+
         val ordering = DEFAULT_ORDERING
-        val fetch_limit = minMaxArticleLimit(limit)
+        val fetchLimit = minMaxArticleLimit(limit)
 
         val articlesRef = db.collection("${userPrefix}/articles")
         val collectionDocRef = db.collection("${userPrefix}/collections")
@@ -72,26 +77,24 @@ class FirestoreHelper(private val fbUser: FirebaseUser) {
 
         // This when is a strange way of doing this, but it's the only way I found that works for
         // the same operation on two different types: CollectionReference and Query
-        when(collection.filter["isRead"]) {
+        when(collection.filter[isReadKey]) {
             null -> articlesRef
-            else -> articlesRef.whereEqualTo("isRead", collection.filter["isRead"])
+            else -> articlesRef.whereEqualTo(isReadKey, collection.filter[isReadKey])
         }
-            .whereArrayContains("collections", collectionDocRef)
-            .orderBy("published", ordering)
-            .limit(fetch_limit)
+            .whereArrayContains(collectionsKey, collectionDocRef)
+            .orderBy(articlesKey, ordering)
+            .limit(fetchLimit)
             .get()
             .addOnSuccessListener { result ->
-                Log.d(TAG, "Articles successfully fetched!")
-                Log.d(TAG, result.documents.toString())
+                Log.d(TAG, "${result.documents.size} articles successfully fetched!")
                 articleList.postValue(
                     result.documents.mapNotNull {
-                        Log.d(TAG, it.id)
                         it.toObject(Article::class.java)
                     }
                 )
             }
             .addOnFailureListener { e->
-                Log.w(TAG, "Error deleting document", e)
+                Log.w(TAG, "Error fetching articles", e)
                 articleList.postValue(listOf())
             }
     }
@@ -136,9 +139,10 @@ class FirestoreHelper(private val fbUser: FirebaseUser) {
     /* ========================================== */
 
 
-    fun fetchAnnotations(annotationList: MutableLiveData<List<Annotation>>, articleId: String) {
+    fun fetchAnnotations(annotationList: MutableLiveData<List<Annotation>>, article: Article) {
 
-        val collectionRef = db.collection("$userPrefix/articles/$articleId/annotations")
+        val collectionRef = db.collection(
+            "$userPrefix/articles/${article.firestoreID}/annotations")
 
         collectionRef
             .get()
@@ -153,11 +157,12 @@ class FirestoreHelper(private val fbUser: FirebaseUser) {
             }
     }
 
-    fun addAnnotationToArticle(annotationList: MutableLiveData<List<Annotation>>, articleId: String,
+    fun addAnnotationToArticle(annotationList: MutableLiveData<List<Annotation>>, article: Article,
                                start: Int, end: Int, text: String) {
         val TAG = "AddAnnotationToArticle"
 
-        val collectionRef = db.collection("$userPrefix/articles/$articleId/annotations")
+        val collectionRef = db.collection(
+            "$userPrefix/articles/${article.firestoreID}/annotations")
 
         val annotationData = hashMapOf(
             "start" to start,
@@ -169,32 +174,32 @@ class FirestoreHelper(private val fbUser: FirebaseUser) {
             .document()
             .set(annotationData)
             .addOnSuccessListener {
-                Log.d(TAG, "DocumentSnapshot successfully written!")
-                fetchAnnotations(annotationList, articleId)
+                Log.d(TAG, "Annotation successfully written to article ${article.firestoreID}!")
+                fetchAnnotations(annotationList, article)
             }
-            .addOnFailureListener {
-                e -> Log.w(TAG, "Error writing document", e)
-                fetchAnnotations(annotationList, articleId)
+            .addOnFailureListener { e ->
+                Log.w(TAG, "Error writing annotation to article ${article.firestoreID}", e)
+                fetchAnnotations(annotationList, article)
             }
     }
 
     fun deleteAnnotationFromArticle(annotationList: MutableLiveData<List<Annotation>>,
-                                    articleId: String, annotationId: String) {
+                                    article: Article, annotation: Annotation) {
         val TAG = "DeleteAnnotationFromArticle"
 
-        val collectionRef = db.collection("$userPrefix/articles/$articleId/annotations")
+        val collectionRef = db.collection(
+            "$userPrefix/articles/${article.firestoreID}/annotations")
 
         collectionRef
-            .document(annotationId)
+            .document(annotation.firestoreID)
             .delete()
             .addOnSuccessListener {
-                Log.d(TAG, "DocumentSnapshot successfully deleted!")
-                fetchAnnotations(annotationList, articleId)
+                Log.d(TAG, "Annotation ${annotation.firestoreID} successfully deleted!")
+                fetchAnnotations(annotationList, article)
             }
-            .addOnFailureListener {
-                e ->
-                Log.w(TAG, "Error deleting document", e)
-                fetchAnnotations(annotationList, articleId)
+            .addOnFailureListener { e ->
+                Log.w(TAG, "Error deleting annotation ${annotation.firestoreID}", e)
+                fetchAnnotations(annotationList, article)
             }
     }
 
@@ -221,29 +226,44 @@ class FirestoreHelper(private val fbUser: FirebaseUser) {
                 Log.d(TAG, "DocumentSnapshot successfully written!")
                 fetchCollections(collectionList)
             }
-            .addOnFailureListener {
-                    e -> Log.w(TAG, "Error writing document", e)
+            .addOnFailureListener { e ->
+                Log.w(TAG, "Error writing document", e)
                 fetchCollections(collectionList)
             }
     }
 
-    fun deleteCollection (collectionList: MutableLiveData<List<Collection>>,
-                          collectionId: String, onSuccessCallback: () -> Unit) {
+    fun deleteCollection(collectionList: MutableLiveData<List<Collection>>,
+                         collection: Collection, onSuccessCallback: () -> Unit) {
         val TAG = "DeleteCollection"
-        val collectionRef = db.collection("$userPrefix/collections/")
 
-        collectionRef
-            .document(collectionId)
-            .delete()
-            .addOnSuccessListener {
-                Log.d(TAG, "DocumentSnapshot successfully deleted!")
-                fetchCollections(collectionList)
-                onSuccessCallback()
-            }
-            .addOnFailureListener {
-                    e ->
-                Log.w(TAG, "Error deleting document", e)
-                fetchCollections(collectionList)
+        val collectionsKey = "collections"
+
+        val articlesRef = db.collection("$userPrefix/articles/")
+        val collectionDocRef = db.collection("$userPrefix/collections/")
+            .document(collection.firestoreID)
+
+        // Get articles that reference this collection
+        articlesRef
+            .whereArrayContains(collectionsKey, collectionDocRef)
+            .get()
+            .addOnSuccessListener { result ->
+                // Run transaction
+                db.runTransaction { transaction ->
+                    // Remove references to this collections
+                    Log.d("GELP", result.documents.toString())
+                    result.documents.forEach {
+                        Log.d("GELP", it.toString())
+                        transaction.update(it.reference, collectionsKey,
+                            FieldValue.arrayRemove(collectionDocRef))
+                    }
+                    // Finally: Delete collection
+                    collectionDocRef.delete()
+
+                    null
+                }.addOnSuccessListener {
+                    // Refresh collections
+                    fetchCollections(collectionList)
+                }
             }
     }
 
@@ -285,7 +305,7 @@ class FirestoreHelper(private val fbUser: FirebaseUser) {
     fun addArticleToCollection(article: Article, collection: Collection) {
 
         val articlesKey = "articles"  // for collection
-        val collectionsKey = "articles"  // for article
+        val collectionsKey = "collections"  // for article
 
         val articleRef = db.collection("$userPrefix/articles")
             .document(article.firestoreID)
@@ -298,24 +318,29 @@ class FirestoreHelper(private val fbUser: FirebaseUser) {
 
             // Update collection with reference to article (and increment counter)
             transaction.update(collectionRef, articlesKey, FieldValue.arrayUnion(articleRef))
+
+            null
         }
     }
 
     fun removeArticleFromCollection(article: Article, collection: Collection) {
         val articlesKey = "articles"  // for collection
-        val collectionsKey = "articles"  // for article
+        val collectionsKey = "collections"  // for article
 
         val articleRef = db.collection("$userPrefix/articles")
             .document(article.firestoreID)
         val collectionRef = db.collection("$userPrefix/collections")
             .document(collection.firestoreID)
 
+        // Todo: Switch to batch write?
         db.runTransaction { transaction ->
-            // Update article with reference to collection
+            // Remove reference to collection from article
             transaction.update(articleRef, collectionsKey, FieldValue.arrayRemove(collectionRef))
 
-            // Update collection with reference to article (and increment counter)
+            // Remove reference to article from collection
             transaction.update(collectionRef, articlesKey, FieldValue.arrayRemove(articleRef))
+
+            null
         }
     }
 

@@ -67,7 +67,7 @@ class CollectionListAdapter(private val viewModel: MainViewModel, val onClickCal
                     }
                     .setPositiveButton("Delete") { _ /*dialog*/, _ /*which*/ ->
                         // Delete collection
-                        viewModel.deleteCollection(item.firestoreID)
+                        viewModel.deleteCollection(item)
                     }
                     .show()
             }

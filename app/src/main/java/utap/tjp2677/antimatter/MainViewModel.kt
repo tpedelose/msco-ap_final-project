@@ -114,13 +114,13 @@ class MainViewModel : ViewModel() {
     private var openAnnotations = MutableLiveData<List<Annotation>>()
 
     /* --- Create --- */
-    fun addAnnotation(articleId: String, start: Int, end: Int, text: String)  {
-        firestoreHelper.addAnnotationToArticle(openAnnotations, articleId, start, end, text)
+    fun createAnnotation(article: Article, start: Int, end: Int, text: String)  {
+        firestoreHelper.addAnnotationToArticle(openAnnotations, article, start, end, text)
     }
 
     /* --- Read --- */
-    fun fetchAnnotations(articleId: String) {
-        firestoreHelper.fetchAnnotations(openAnnotations, articleId)
+    fun fetchAnnotations(article: Article) {
+        firestoreHelper.fetchAnnotations(openAnnotations, article)
     }
 
     fun observeOpenAnnotations(): LiveData<List<Annotation>> {
@@ -131,8 +131,8 @@ class MainViewModel : ViewModel() {
     // Todo?
 
     /* --- Destroy --- */
-    fun deleteAnnotation(articleId: String, annotationId: String) {
-        firestoreHelper.deleteAnnotationFromArticle(openAnnotations, articleId, annotationId)
+    fun deleteAnnotation(article: Article, annotation: Annotation) {
+        firestoreHelper.deleteAnnotationFromArticle(openAnnotations, article, annotation)
     }
 
 
@@ -179,6 +179,7 @@ class MainViewModel : ViewModel() {
 
     fun getUserCollections(): List<Collection> {
         var list = listOf<Collection>()
+        // TODO: include Queue
         collectionList.value?.let {
             list = it.mapNotNull { col ->
                 // Filter not-user-created collections
@@ -214,8 +215,8 @@ class MainViewModel : ViewModel() {
 
 
     /* --- Destroy --- */
-    fun deleteCollection(collectionId: String) {
-        firestoreHelper.deleteCollection(collectionList, collectionId) {
+    fun deleteCollection(collection: Collection) {
+        firestoreHelper.deleteCollection(collectionList, collection) {
             collectionList.value?.let {
                 setOpenCollection(it[0])
             }

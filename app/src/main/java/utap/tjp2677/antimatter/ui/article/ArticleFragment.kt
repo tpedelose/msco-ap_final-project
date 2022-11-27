@@ -1,7 +1,6 @@
 package utap.tjp2677.antimatter.ui.article
 
 import android.content.Context
-import android.content.DialogInterface
 import android.graphics.Color
 import android.graphics.Rect
 import android.os.Bundle
@@ -27,7 +26,6 @@ import utap.tjp2677.antimatter.MainViewModel
 import utap.tjp2677.antimatter.R
 import utap.tjp2677.antimatter.authentication.models.Annotation
 import utap.tjp2677.antimatter.authentication.models.Article
-import utap.tjp2677.antimatter.authentication.models.Collection
 import utap.tjp2677.antimatter.databinding.FragmentArticleBinding
 import utap.tjp2677.antimatter.utils.toDp
 import kotlin.math.max
@@ -68,7 +66,7 @@ class ArticleFragment : Fragment() {
             textView, actionMode, menuItem -> Boolean
                 return@SelectionCallback when (menuItem?.itemId) {
                     R.id.highlight -> {
-                        val subtext = textView.text.substring(textView.selectionEnd, textView.selectionEnd)
+                        val subtext = textView.text.substring(textView.selectionStart, textView.selectionEnd)
                         createAnnotation(subtext, textView.selectionStart, textView.selectionEnd)
                         true
                     }
@@ -78,7 +76,7 @@ class ArticleFragment : Fragment() {
 
         // Observers
         viewModel.observeOpenedArticle().observe(viewLifecycleOwner) {
-            viewModel.fetchAnnotations(it.firestoreID)
+            viewModel.fetchAnnotations(it)
             loadArticle(it)
             binding.article.fullScroll(ScrollView.FOCUS_UP)
         }
@@ -167,43 +165,81 @@ class ArticleFragment : Fragment() {
                 }
 
                 override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
-                    val article = viewModel.getOpenArticle()
+                    val article = viewModel.getOpenArticle()!!
 
                     return when (menuItem.itemId) {
                         R.id.more -> { true }  // TODO: Handle more item (inside overflow menu) press
                         R.id.add -> {
+                            // Get user's collections
                             val userCollections = viewModel.getUserCollections()
-                            val names = (userCollections.map { "${it.icon} ${it.name}" }).toTypedArray()
-                            val checked = BooleanArray(names.size)
-                            // TODO: check collections already in.
-                            //      Requires rewrite of Firebase and FirebaseHelper
-//                            val checked = (userCollections.map { it.name }).toTypedArray()
-                            val checkedList = checked.toMutableList()
 
+                            // Create list of ids of collections that the article is in
+                            val articleCollectionIds = article.collections.map { it.id }
+
+                            // Loop over collections, creating names and marking those the article is in as true
+                            val (collectionNames, isInCollection) = userCollections.map {
+                                val name = "${it.name} ${it.icon}"
+                                val checked = articleCollectionIds.contains( it.firestoreID )
+                                return@map Pair(name, checked)
+                            }.unzip()
+
+                            // Make a string array for the dialog to reference
+                            val names = collectionNames.toTypedArray()
+
+                            // Make a boolean array for the dialog to reference
+                            val checked = isInCollection.toBooleanArray()
+
+                            // Make mutable list to track changes
+                            val hasChanged = BooleanArray(checked.size) { false }
+
+                            // Build the dialog
                             MaterialAlertDialogBuilder(binding.root.context)
                                 .setTitle("Add to collection?")
                                 .setMultiChoiceItems(names, checked) { dialog, which, isChecked ->
-                                    checkedList[which] = isChecked
+                                    // Track which collections are changed
+                                    Log.d("Checked", dialog.toString())
+                                    Log.d("Checked", which.toString())
+                                    Log.d("Checked", isChecked.toString())
+                                    Log.d("Checked", checked[which].toString())
+
+                                    hasChanged[which] = !hasChanged[which]
                                 }
                                 .setNegativeButton("Cancel") { _ /*dialog*/, _ /*which*/->
                                     // Do nothing
                                 }
                                 .setPositiveButton("Submit") { dialog, which ->
                                     Log.d("Checked", names.toList().toString())
-                                    Log.d("Checked", checkedList.toString())
+                                    Log.d("Checked", hasChanged.toList().toString())
+
+                                    // Add article to collection in batch?
+                                    hasChanged.forEachIndexed { index, changed ->
+                                        // update any changed entries
+                                        if (changed) {
+                                            Log.d("Changed!", "$index, ${checked[index]}")
+                                            Log.d("Changed!", "$index, ${userCollections[index]}")
+                                            if (checked[index]) {
+                                                // wasn't in collection, add
+                                                viewModel.addArticleToCollection(article, userCollections[index])
+                                            } else {
+                                                // was in collection, remove
+                                                viewModel.removeArticleFromCollection(article, userCollections[index])
+                                            }
+                                        }
+                                    }
+
                                 }
                                 .show()
                             true
                         }
                         R.id.share -> {
-                            article?.link?.let {
+                            article.link.let {
                                 val messageTitle = "${article.title} - ${article.publicationName}"
                                 viewModel.shareMessage(binding.root.context, it, messageTitle)
                             }
                             true
                         }
                         R.id.open_in_browser -> {
-                            article?.link?.let { viewModel.openInBrowser(binding.root.context, it) }
+                            article.link.let { viewModel.openInBrowser(binding.root.context, it) }
                             true
                         }
                         else -> false
@@ -238,25 +274,26 @@ class ArticleFragment : Fragment() {
         if (start == end) { return }  // reject when annotation would be zero length
 
         viewModel.getOpenArticle()?.let {
-            viewModel.addAnnotation(it.firestoreID, start, end, text)
+            viewModel.createAnnotation(it, start, end, text)
         }
     }
 
     private fun annotationClickCallbackHandler(
         annotation: Annotation, mode: ActionMode, menuItem: MenuItem): Boolean {
 
-        val article: Article? = viewModel.getOpenArticle()
+        val article: Article = viewModel.getOpenArticle()!!
 
         return when (menuItem.itemId) {
             R.id.annotation_delete -> {
-                article?.let {
-                    viewModel.deleteAnnotation(it.firestoreID, annotation.firestoreID)
+                article.let {
+                    viewModel.deleteAnnotation(it, annotation)
                 }
                 true
             }
             R.id.annotation_share -> {
-                annotation.text?.let {
-                    viewModel.shareMessage(binding.root.context, it, article?.title)
+                annotation.text?.let { text ->
+                    val quote = "\"$text\" - ${article.author} for ${article.publicationName}"
+                    viewModel.shareMessage(binding.root.context, quote, article.title)
                 }
                 true
             }
