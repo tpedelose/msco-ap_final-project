@@ -62,11 +62,11 @@ class FirestoreHelper(private val fbUser: FirebaseUser) {
     fun fetchArticles(articleList: MutableLiveData<List<Article>>,
                       collection: Collection, limit: Int?, start: Int, end: Int) {
         // TODO!!!  Pagination, Order, Filter
-        
+
         val TAG = "FetchArticles"
         val isReadKey = "isRead"
         val collectionsKey = "collections"
-        val articlesKey = "articles"
+        val publishedKey = "published"
 
         val ordering = DEFAULT_ORDERING
         val fetchLimit = minMaxArticleLimit(limit)
@@ -82,7 +82,7 @@ class FirestoreHelper(private val fbUser: FirebaseUser) {
             else -> articlesRef.whereEqualTo(isReadKey, collection.filter[isReadKey])
         }
             .whereArrayContains(collectionsKey, collectionDocRef)
-            .orderBy(articlesKey, ordering)
+            .orderBy(publishedKey, ordering)
             .limit(fetchLimit)
             .get()
             .addOnSuccessListener { result ->
