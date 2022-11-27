@@ -42,7 +42,7 @@ class FeedFragment : Fragment() {
         // Observers
         viewModel.observeOpenCollection().observe(viewLifecycleOwner) {
             articlesListBinding.refresh.isRefreshing = true
-            articlesListBinding.titlebarCollapse.title = it.name
+            articlesListBinding.titlebarCollapse.title = "${it.name} ${it.icon}"
             fetchWithFilter(it)
         }
 
@@ -61,9 +61,8 @@ class FeedFragment : Fragment() {
 
         // Listeners
         articlesListBinding.refresh.setOnRefreshListener {
-            val collection = viewModel.getOpenCollection()
-            collection?.let {
-                fetchWithFilter(collection)
+            viewModel.getOpenCollection()?.let {
+                fetchWithFilter(it)
             }
         }
 

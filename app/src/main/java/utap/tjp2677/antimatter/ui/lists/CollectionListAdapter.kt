@@ -37,11 +37,10 @@ class CollectionListAdapter(private val viewModel: MainViewModel, val onClickCal
 
         // Change text style for "most important" collection (or reset)
         val textStyle = when (position) {
-            0 -> R.attr.textAppearanceDisplayLarge
-            else -> R.attr.textAppearanceTitleMedium
+            0 -> R.style.TextAppearance_Material3_HeadlineSmall
+            else -> R.style.TextAppearance_Material3_TitleMedium
         }
-        TextViewCompat.setTextAppearance(binding.title, textStyle)
-//        binding.title.setTextAppearance(textStyle)
+        binding.title.setTextAppearance(textStyle)
 
         // Click listeners
         binding.root.setOnClickListener {
