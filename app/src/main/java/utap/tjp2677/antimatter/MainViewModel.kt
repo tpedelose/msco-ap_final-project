@@ -50,11 +50,12 @@ class MainViewModel : ViewModel() {
     private var openArticle = MutableLiveData<Article>()
 
     /* --- Create --- */
+    // N/A -- User should not be able to create articles
 
 
     /* --- Read --- */
-    fun fetchArticles(collectionId: String, limit: Int? = null, isRead: Boolean? = null) {
-        firestoreHelper.fetchArticles(articleList, collectionId, limit, isRead, 0, 0)
+    fun fetchArticles(collection: Collection, limit: Int? = null) {
+        firestoreHelper.fetchArticles(articleList, collection, limit, 0, 0)
     }
 
     fun observeArticles(): LiveData<List<Article>> {
@@ -67,17 +68,27 @@ class MainViewModel : ViewModel() {
 
 
     /* --- Update --- */
+    // Todo: Cache the special collections (Inbox, Recent, Queue) in viewModel
+
     fun toggleArticleReadStatus(position: Int, successCallback: () -> Unit) {
-        val cid = openCollection.value?.firestoreID
         val article = getArticleAt(position)
-        firestoreHelper.setArticleReadState(cid!!, article.firestoreID, !article.isRead) {
+        firestoreHelper.setArticleReadState(article, !article.isRead) {
             article.isRead = !article.isRead
+            successCallback()  // To notify dataset of change
+        }
+    }
+
+    fun toggleArticleQueueStatus(position: Int, successCallback: () -> Unit) {
+        val article = getArticleAt(position)
+        firestoreHelper.setArticleQueueStatus(article, !article.isQueued) {
+            article.isQueued = !article.isQueued
             successCallback()  // To notify dataset of change
         }
     }
 
 
     /* --- Destroy --- */
+    // N/A -- User should not be able to destroy articles
 
 
     /* ------------------------------------------ */
@@ -103,13 +114,13 @@ class MainViewModel : ViewModel() {
     private var openAnnotations = MutableLiveData<List<Annotation>>()
 
     /* --- Create --- */
-    fun addAnnotation(collectionId: String, articleId: String, start: Int, end: Int, text: String)  {
-        firestoreHelper.addAnnotationToArticle(openAnnotations, collectionId, articleId, start, end, text)
+    fun addAnnotation(articleId: String, start: Int, end: Int, text: String)  {
+        firestoreHelper.addAnnotationToArticle(openAnnotations, articleId, start, end, text)
     }
 
     /* --- Read --- */
-    fun fetchAnnotations(collectionId: String, articleId: String) {
-        firestoreHelper.fetchAnnotations(openAnnotations, collectionId, articleId)
+    fun fetchAnnotations(articleId: String) {
+        firestoreHelper.fetchAnnotations(openAnnotations, articleId)
     }
 
     fun observeOpenAnnotations(): LiveData<List<Annotation>> {
@@ -117,10 +128,11 @@ class MainViewModel : ViewModel() {
     }
 
     /* --- Update --- */
+    // Todo?
 
     /* --- Destroy --- */
-    fun deleteAnnotation(collectionId: String, articleId: String, annotationId: String) {
-        firestoreHelper.deleteAnnotationFromArticle(openAnnotations, collectionId, articleId, annotationId)
+    fun deleteAnnotation(articleId: String, annotationId: String) {
+        firestoreHelper.deleteAnnotationFromArticle(openAnnotations, articleId, annotationId)
     }
 
 
@@ -157,6 +169,10 @@ class MainViewModel : ViewModel() {
         return collectionList
     }
 
+    fun getCollectionFromId(id: String): Collection? {
+        return collectionList.value?.firstOrNull { it.firestoreID == id }
+    }
+
     fun getCollectionAt(position: Int): Collection {
         return collectionList.value!![position]
     }
@@ -188,22 +204,16 @@ class MainViewModel : ViewModel() {
     }
 
     /* --- Update --- */
-
-    fun addArticleToCollection(sourceCollectionId: String, targetCollectionId: String, position: Int) {
-        val article = getArticleAt(position)
-        firestoreHelper.addArticleToCollection(sourceCollectionId, targetCollectionId, article.firestoreID)
+    fun addArticleToCollection(article: Article, collection: Collection) {
+        firestoreHelper.addArticleToCollection(article, collection)
     }
 
-    fun toggleArticleInReadLater(position: Int) {
-        val article = getArticleAt(position)
-//        when (article.isSavedForLater) {
-//            true -> firestoreHelper.addArticleToCollection()
-//            false -> firestoreHelper.removeArticleFromCollection()
-//        }
+    fun removeArticleFromCollection(article: Article, collection: Collection) {
+        firestoreHelper.removeArticleFromCollection(article, collection)
     }
+
 
     /* --- Destroy --- */
-
     fun deleteCollection(collectionId: String) {
         firestoreHelper.deleteCollection(collectionList, collectionId) {
             collectionList.value?.let {
@@ -211,7 +221,6 @@ class MainViewModel : ViewModel() {
             }
         }
     }
-
 
 
     /* ========================================== */
@@ -339,7 +348,6 @@ class MainViewModel : ViewModel() {
         // TODO: Split text into smaller chunks for progress tracking. By sentence? Word?
         return cleanText.splitToSequence("\n").filter { it.isNotBlank() }
     }
-
 
 
     /* ========================================== */

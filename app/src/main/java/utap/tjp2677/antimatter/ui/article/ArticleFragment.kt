@@ -78,8 +78,7 @@ class ArticleFragment : Fragment() {
 
         // Observers
         viewModel.observeOpenedArticle().observe(viewLifecycleOwner) {
-            val cid = viewModel.getOpenCollection()?.firestoreID
-            viewModel.fetchAnnotations(cid!!, it.firestoreID)
+            viewModel.fetchAnnotations(it.firestoreID)
             loadArticle(it)
             binding.article.fullScroll(ScrollView.FOCUS_UP)
         }
@@ -238,11 +237,8 @@ class ArticleFragment : Fragment() {
     private fun createAnnotation(text: String, start: Int, end: Int) {
         if (start == end) { return }  // reject when annotation would be zero length
 
-        // Todo? Put collectionId in article?
-        val cid = viewModel.getOpenCollection()?.firestoreID
-        val aid = viewModel.getOpenArticle()?.firestoreID
-        (cid != null && aid != null).let {
-            viewModel.addAnnotation(cid!!, aid!!, start, end, text)
+        viewModel.getOpenArticle()?.let {
+            viewModel.addAnnotation(it.firestoreID, start, end, text)
         }
     }
 
@@ -253,16 +249,9 @@ class ArticleFragment : Fragment() {
 
         return when (menuItem.itemId) {
             R.id.annotation_delete -> {
-                article ?: return false
-
-                val collection: Collection? = viewModel.getOpenCollection()
-                collection ?: return false
-
-                viewModel.deleteAnnotation(
-                    collection.firestoreID,
-                    article.firestoreID,
-                    annotation.firestoreID
-                )
+                article?.let {
+                    viewModel.deleteAnnotation(it.firestoreID, annotation.firestoreID)
+                }
                 true
             }
             R.id.annotation_share -> {

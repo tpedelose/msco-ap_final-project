@@ -10,10 +10,14 @@ data class Collection (
     @DocumentId
     var firestoreID: String = "",
 
-    // Content
+    // Metadata
     var name: String = "",
     var icon: String = "",
     var order: Int = 100,
+
+    // Articles
+    var articles: List<DocumentReference> = listOf(),
+    var count: Int = 0,
 
     // Special
     var immortal: Boolean = false,

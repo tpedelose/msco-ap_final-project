@@ -19,13 +19,15 @@ data class Article(
     var image: String? = null,
 
     // User related data
+    var collections: List<DocumentReference> = listOf(),
+
     @get:PropertyName("isRead") // Well this is annoying... https://medium.com/@eeddeellee/boolean-fields-that-start-with-is-in-firebase-firestore-49afb65e3639
     @set:PropertyName("isRead")
     var isRead: Boolean = false,
 
-    @get:PropertyName("is_saved_for_later")
-    @set:PropertyName("is_saved_for_later")
-    var isSavedForLater: Boolean = false,
+    @get:PropertyName("isQueued")
+    @set:PropertyName("isQueued")
+    var isQueued: Boolean = false,
 
     // Publication
     var publication: DocumentReference? = null,

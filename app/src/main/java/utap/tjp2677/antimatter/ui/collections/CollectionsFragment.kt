@@ -87,6 +87,7 @@ class CollectionsFragment : Fragment() {
         // Observers
         viewModel.observeCollections().observe(viewLifecycleOwner) {
             collectionListAdapter?.submitList(it)
+            Log.d("Collections", it[0].toString())
             binding.refresh.isRefreshing = false
         }
 

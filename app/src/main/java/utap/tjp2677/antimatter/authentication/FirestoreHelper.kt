@@ -60,24 +60,25 @@ class FirestoreHelper(private val fbUser: FirebaseUser) {
     /* ========================================== */
 
     fun fetchArticles(articleList: MutableLiveData<List<Article>>,
-                      collectionId: String, limit: Int?, isRead: Boolean? = null, start: Int, end: Int) {
-
+                      collection: Collection, limit: Int?, start: Int, end: Int) {
         val TAG = "FetchArticles"
         // TODO!!!  Pagination, Order, Filter
         val ordering = DEFAULT_ORDERING
-        val _limit = minMaxArticleLimit(limit)
+        val fetch_limit = minMaxArticleLimit(limit)
 
-        val collectionRef = db.collection(
-            "${userPrefix}/collections/$collectionId/articles")
+        val articlesRef = db.collection("${userPrefix}/articles")
+        val collectionDocRef = db.collection("${userPrefix}/collections")
+            .document(collection.firestoreID)
 
         // This when is a strange way of doing this, but it's the only way I found that works for
         // the same operation on two different types: CollectionReference and Query
-        when (isRead != null) {
-            true -> collectionRef.whereEqualTo("isRead", isRead)
-            false -> collectionRef
+        when(collection.filter["isRead"]) {
+            null -> articlesRef
+            else -> articlesRef.whereEqualTo("isRead", collection.filter["isRead"])
         }
+            .whereArrayContains("collections", collectionDocRef)
             .orderBy("published", ordering)
-            .limit(_limit)
+            .limit(fetch_limit)
             .get()
             .addOnSuccessListener { result ->
                 Log.d(TAG, "Articles successfully fetched!")
@@ -95,38 +96,33 @@ class FirestoreHelper(private val fbUser: FirebaseUser) {
             }
     }
 
-    fun setArticleReadState(collectionId: String, articleId: String, isRead: Boolean, onSuccessCallback: () -> Unit) {
+    fun setArticleReadState(article: Article, isRead: Boolean, onSuccessCallback: () -> Unit) {
 
+        val isReadKey = "isRead"
+        val articlesKey = "articles"
+        val collectionsKey = "collections"
         val recentDocId = "Recent"
 
-        // TODO: Solve what happens when marking articles as unread in the Recently Read section
-
-        val collectionRef = db.collection(
-            "${userPrefix}/collections/$collectionId/articles")
-        val recentlyReadRef = db.collection(
-            "${userPrefix}/collections/$recentDocId/articles")
-
-        val baseDocRef = collectionRef.document(articleId)
-        val recentDocRef = recentlyReadRef.document(articleId)
+        val articleDocRef = db.collection("$userPrefix/articles")
+            .document(article.firestoreID)
+        val recentDocRef = db.collection("$userPrefix/collections")
+            .document(recentDocId)
 
         db.runTransaction { transaction ->
-            // Ideally this would all be handled on the server and/or via a relational DB, but...
-            val baseSnapshot = transaction.get(baseDocRef)
-            val recentSnapshot = transaction.get(recentDocRef)
-
-            // Update the base document
-            transaction.update(baseDocRef, "isRead", isRead)
-
+            // article: add/remove Recently Read document reference to @collectionsKey field
+            // collection: add/remove Article document reference to @articlesKey field
             if (isRead) {
-                // Marking as read. Create a copy in the Recent collection
-                baseSnapshot.data?.let {
-                    it["isRead"] = true
-                    transaction.set(recentSnapshot.reference, it)
-                }
-            } else if (recentSnapshot.exists()) {
-                // Marking as unread. Delete the copy in the Recent collection (if it exists)
-                transaction.delete(recentSnapshot.reference)
+                // Mark as read
+                transaction.update(articleDocRef, collectionsKey, FieldValue.arrayUnion(recentDocRef))
+                transaction.update(recentDocRef, articlesKey, FieldValue.arrayUnion(articleDocRef))
+            } else {
+                // Mark as unread
+                transaction.update(articleDocRef, collectionsKey, FieldValue.arrayRemove(recentDocRef))
+                transaction.update(recentDocRef, articlesKey, FieldValue.arrayRemove(articleDocRef))
             }
+
+            // Set read status on article
+            transaction.update(articleDocRef, isReadKey, isRead)
 
             null
         }.addOnSuccessListener {
@@ -140,11 +136,9 @@ class FirestoreHelper(private val fbUser: FirebaseUser) {
     /* ========================================== */
 
 
-    fun fetchAnnotations(annotationList: MutableLiveData<List<Annotation>>,
-                         collectionId: String, articleId: String) {
+    fun fetchAnnotations(annotationList: MutableLiveData<List<Annotation>>, articleId: String) {
 
-        val collectionRef = db.collection(
-            "${userPrefix}/collections/$collectionId/articles/$articleId/annotations")
+        val collectionRef = db.collection("$userPrefix/articles/$articleId/annotations")
 
         collectionRef
             .get()
@@ -159,13 +153,11 @@ class FirestoreHelper(private val fbUser: FirebaseUser) {
             }
     }
 
-    fun addAnnotationToArticle(annotationList: MutableLiveData<List<Annotation>>,
-                               collectionId: String, articleId: String,
+    fun addAnnotationToArticle(annotationList: MutableLiveData<List<Annotation>>, articleId: String,
                                start: Int, end: Int, text: String) {
         val TAG = "AddAnnotationToArticle"
 
-        val collectionRef = db.collection(
-            "${userPrefix}/collections/$collectionId/articles/$articleId/annotations")
+        val collectionRef = db.collection("$userPrefix/articles/$articleId/annotations")
 
         val annotationData = hashMapOf(
             "start" to start,
@@ -178,32 +170,31 @@ class FirestoreHelper(private val fbUser: FirebaseUser) {
             .set(annotationData)
             .addOnSuccessListener {
                 Log.d(TAG, "DocumentSnapshot successfully written!")
-                fetchAnnotations(annotationList, collectionId, articleId)
+                fetchAnnotations(annotationList, articleId)
             }
             .addOnFailureListener {
                 e -> Log.w(TAG, "Error writing document", e)
-                fetchAnnotations(annotationList, collectionId, articleId)
+                fetchAnnotations(annotationList, articleId)
             }
     }
 
     fun deleteAnnotationFromArticle(annotationList: MutableLiveData<List<Annotation>>,
-                                    collectionId: String, articleId: String, annotationId: String) {
+                                    articleId: String, annotationId: String) {
         val TAG = "DeleteAnnotationFromArticle"
 
-        val collectionRef = db.collection(
-            "${userPrefix}/collections/$collectionId/articles/$articleId/annotations")
+        val collectionRef = db.collection("$userPrefix/articles/$articleId/annotations")
 
         collectionRef
             .document(annotationId)
             .delete()
             .addOnSuccessListener {
                 Log.d(TAG, "DocumentSnapshot successfully deleted!")
-                fetchAnnotations(annotationList, collectionId, articleId)
+                fetchAnnotations(annotationList, articleId)
             }
             .addOnFailureListener {
                 e ->
                 Log.w(TAG, "Error deleting document", e)
-                fetchAnnotations(annotationList, collectionId, articleId)
+                fetchAnnotations(annotationList, articleId)
             }
     }
 
@@ -212,71 +203,10 @@ class FirestoreHelper(private val fbUser: FirebaseUser) {
     /*                 Collections                */
     /* ========================================== */
 
-    fun fetchCollections(collectionList: MutableLiveData<List<Collection>>) {
-        val collectionRef = db.collection("${userPrefix}/collections")
-
-        collectionRef
-            .orderBy("order", Query.Direction.ASCENDING)
-            .get()
-            .addOnSuccessListener { result ->
-                collectionList.postValue(
-                    result.documents.mapNotNull {
-                        it.toObjectOrNull(Collection::class.java)
-                    }
-                )
-            }
-            .addOnFailureListener {
-                Log.d(javaClass.simpleName, "Utter failure")
-                collectionList.postValue(listOf())
-            }
-    }
-
-    fun fetchCollectionAsLiveData(collection: MutableLiveData<Collection>, collectionId: String) {
-        val collectionRef = db.collection("${userPrefix}/collections/")
-
-        collectionRef
-            .document(collectionId)
-            .get()
-            .addOnSuccessListener { result ->
-                collection.postValue(
-                    result.toObjectOrNull(Collection::class.java)
-                )
-            }
-            .addOnFailureListener {
-                Log.d(javaClass.simpleName, "Utter failure")
-            }
-    }
-
-    fun addArticleToCollection(sourceCollectionId: String, targetCollectionId: String, articleId: String) {
-
-        // Todo:  Maybe flatten this structure.  Article has list of ids of collections?  Requires multiple fetches though
-
-        val sourceCollectionRef = db.collection(
-            "${userPrefix}/collections/$sourceCollectionId/articles")
-        val targetCollectionRef = db.collection(
-            "${userPrefix}/collections/$targetCollectionId/articles")
-
-        val sourceDocRef = sourceCollectionRef.document(articleId)
-        val targetDocRef = targetCollectionRef.document(articleId)
-
-        db.runTransaction { transaction ->
-            val sourceSnapshot = transaction.get(sourceDocRef)
-            val targetSnapshot = transaction.get(targetDocRef)
-
-            if (!targetSnapshot.exists()) {
-                sourceSnapshot.data?.let {
-                    transaction.set(targetSnapshot.reference, it)
-                }
-            }
-        }
-    }
-
     fun createCollection(collectionList: MutableLiveData<List<Collection>>,
                          name: String, icon: String, order: Int) {
         val TAG = "CreateCollection"
-
-        val collectionRef = db.collection(
-            "${userPrefix}/collections/")
+        val collectionRef = db.collection("$userPrefix/collections/")
 
         val annotationData = hashMapOf(
             "name" to name,
@@ -300,9 +230,7 @@ class FirestoreHelper(private val fbUser: FirebaseUser) {
     fun deleteCollection (collectionList: MutableLiveData<List<Collection>>,
                           collectionId: String, onSuccessCallback: () -> Unit) {
         val TAG = "DeleteCollection"
-
-        val collectionRef = db.collection(
-            "${userPrefix}/collections/")
+        val collectionRef = db.collection("$userPrefix/collections/")
 
         collectionRef
             .document(collectionId)
@@ -319,8 +247,110 @@ class FirestoreHelper(private val fbUser: FirebaseUser) {
             }
     }
 
-    fun removeArticleFromCollection(articleId: String, collectionId: String) {
+    fun fetchCollections(collectionList: MutableLiveData<List<Collection>>) {
+        val collectionRef = db.collection("$userPrefix/collections")
 
+        collectionRef
+            .orderBy("order", Query.Direction.ASCENDING)
+            .get()
+            .addOnSuccessListener { result ->
+                collectionList.postValue(
+                    result.documents.mapNotNull {
+                        it.toObjectOrNull(Collection::class.java)
+                    }
+                )
+            }
+            .addOnFailureListener {
+                Log.d(javaClass.simpleName, "Utter failure")
+                collectionList.postValue(listOf())
+            }
+    }
+
+    fun fetchCollectionAsLiveData(collection: MutableLiveData<Collection>, collectionId: String) {
+        val collectionRef = db.collection("$userPrefix/collections/")
+
+        collectionRef
+            .document(collectionId)
+            .get()
+            .addOnSuccessListener { result ->
+                collection.postValue(
+                    result.toObjectOrNull(Collection::class.java)
+                )
+            }
+            .addOnFailureListener {
+                Log.d(javaClass.simpleName, "Utter failure")
+            }
+    }
+
+    fun addArticleToCollection(article: Article, collection: Collection) {
+
+        val articlesKey = "articles"  // for collection
+        val collectionsKey = "articles"  // for article
+
+        val articleRef = db.collection("$userPrefix/articles")
+            .document(article.firestoreID)
+        val collectionRef = db.collection("$userPrefix/collections")
+            .document(collection.firestoreID)
+
+        db.runTransaction { transaction ->
+            // Update article with reference to collection
+            transaction.update(articleRef, collectionsKey, FieldValue.arrayUnion(collectionRef))
+
+            // Update collection with reference to article (and increment counter)
+            transaction.update(collectionRef, articlesKey, FieldValue.arrayUnion(articleRef))
+        }
+    }
+
+    fun removeArticleFromCollection(article: Article, collection: Collection) {
+        val articlesKey = "articles"  // for collection
+        val collectionsKey = "articles"  // for article
+
+        val articleRef = db.collection("$userPrefix/articles")
+            .document(article.firestoreID)
+        val collectionRef = db.collection("$userPrefix/collections")
+            .document(collection.firestoreID)
+
+        db.runTransaction { transaction ->
+            // Update article with reference to collection
+            transaction.update(articleRef, collectionsKey, FieldValue.arrayRemove(collectionRef))
+
+            // Update collection with reference to article (and increment counter)
+            transaction.update(collectionRef, articlesKey, FieldValue.arrayRemove(articleRef))
+        }
+    }
+
+    fun setArticleQueueStatus(article: Article, isQueued: Boolean, onSuccessCallback: () -> Unit) {
+        val isQueuedKey = "isQueued"
+        val articlesKey = "articles"
+        val collectionsKey = "collections"
+        val queueDocKey = "Queue"
+
+        val articleDocRef = db.collection("$userPrefix/articles")
+            .document(article.firestoreID)
+        val queueDocRef = db.collection("$userPrefix/collections")
+            .document(queueDocKey)
+
+        db.runTransaction { transaction ->
+            // article: add/remove Recently Read document reference to @collectionsKey field
+            // collection: add/remove Article document reference to @articlesKey field
+            if (isQueued) {
+                // Add to queue
+                transaction.update(articleDocRef, collectionsKey, FieldValue.arrayUnion(queueDocRef))
+                transaction.update(queueDocRef, articlesKey, FieldValue.arrayUnion(articleDocRef))
+            }
+            else {
+                // Remove from queue
+                transaction.update(articleDocRef, collectionsKey, FieldValue.arrayRemove(queueDocRef))
+                transaction.update(queueDocRef, articlesKey, FieldValue.arrayRemove(articleDocRef))
+            }
+
+            // Set queue status on article
+            transaction.update(articleDocRef, isQueuedKey, isQueued)
+
+            null
+        }.addOnSuccessListener {
+            onSuccessCallback()
+        }
     }
 
 

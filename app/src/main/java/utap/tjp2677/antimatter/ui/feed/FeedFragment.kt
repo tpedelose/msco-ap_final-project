@@ -1,12 +1,9 @@
 package utap.tjp2677.antimatter.ui.feed
 
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toolbar
-import androidx.core.view.isGone
 import androidx.fragment.app.*
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.*
@@ -80,9 +77,7 @@ class FeedFragment : Fragment() {
     }
 
     private fun fetchWithFilter(collection: Collection) {
-        val cid = collection.firestoreID
-        val isReadFilter = collection.filter["isRead"]?.let { it as Boolean }
-        viewModel.fetchArticles(cid, fetchLimit, isReadFilter)
+        viewModel.fetchArticles(collection, fetchLimit)
     }
 
     private fun initRecyclerView() {
@@ -104,16 +99,19 @@ class FeedFragment : Fragment() {
         touchHelper.attachToRecyclerView(rv)
     }
 
-    fun markAsReadCallback(position: Int) {
+    private fun markAsReadCallback(position: Int) {
         viewModel.toggleArticleReadStatus(position) {
             // I guess this is the only way of doing a smooth update?
             adapter.notifyItemChanged(position)
         }
     }
 
-    fun toggleQueueCallback(position: Int) {
-        val cid = viewModel.getOpenCollection()?.firestoreID
-        viewModel.addArticleToCollection(cid!!, "Queue", position)
+    private fun toggleQueueCallback(position: Int) {
+        viewModel.toggleArticleQueueStatus(position) {
+            // I guess this is the only way of doing a smooth update?
+//            adapter.notifyItemChanged(position)
+            // TODO? remove immediately?
+        }
     }
 
 }
