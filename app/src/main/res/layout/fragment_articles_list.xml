@@ -26,7 +26,6 @@
                 android:layout_height="?attr/actionBarSize"
                 android:elevation="0dp"
                 app:layout_collapseMode="pin"
-                app:menu="@menu/app_bar_feed_menu"
                 app:title="Feed" />
 
         </com.google.android.material.appbar.CollapsingToolbarLayout>
@@ -49,17 +48,23 @@
 
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
-    <TextView
+    <com.google.android.material.card.MaterialCardView
+        style="?attr/materialCardViewFilledStyle"
         android:visibility="gone"
         android:id="@+id/no_data_placeholder"
-        android:text="No Articles\n️        . z Z\nᓚᘏᗢ      "
-        android:textAppearance="?attr/textAppearanceHeadline5"
-        android:textColor="?attr/colorOnSurfaceVariant"
-        android:background="?attr/colorSurfaceVariant"
         android:layout_width="wrap_content"
+        android:layout_marginTop="72dp"
         android:layout_height="wrap_content"
-        android:padding="24dp"
         android:layout_gravity="center"
-        android:gravity="center"/>
+        android:gravity="center">
+
+        <TextView
+            android:text="no articles\n\n️          . z Z\n  ᓚᘏᗢ      "
+            android:textAppearance="?attr/textAppearanceHeadline5"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="24dp"/>
+
+    </com.google.android.material.card.MaterialCardView>
 
 </merge>

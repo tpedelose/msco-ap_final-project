@@ -3,15 +3,11 @@ package utap.tjp2677.antimatter.ui.collections
 import android.graphics.Color
 import android.os.Bundle
 import android.text.InputFilter
-import android.text.Layout
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewGroup.MarginLayoutParams
-import android.widget.EditText
-import android.widget.FrameLayout
-import android.widget.RelativeLayout
 import androidx.core.view.marginBottom
 import androidx.core.view.updateLayoutParams
 import androidx.fragment.app.Fragment
@@ -36,6 +32,7 @@ class CollectionsFragment : Fragment() {
     private val viewModel: MainViewModel by activityViewModels()
     private var collectionListAdapter: CollectionListAdapter? = null
     private var initialFABBottomMargin: Int? = null
+    private var initialCollectionListBottomMargin: Int? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -92,17 +89,27 @@ class CollectionsFragment : Fragment() {
         }
 
         viewModel.observePlayerIsActive().observe(viewLifecycleOwner) { isActive ->
+            // Todo: avoid hard-setting of height + margins
+
+            val buffer = (56+12).toPx
+
             // Keep the FAB from behind the Player
             binding.extendedFab.updateLayoutParams<MarginLayoutParams> {
-                if (isActive) {
-                    // Give add extra height
-                    setMargins(leftMargin, topMargin, rightMargin,
-                        (bottomMargin + (56+8).toPx).toInt())
-                    // Todo: avoid hard-setting of player height + margin
-                    // Todo: Give recyclerview more margin
-                } else {
-                    // Reset
+                if (isActive) {  // Give FAB extra room
+                    setMargins(leftMargin, topMargin, rightMargin, (bottomMargin + buffer).toInt())
+                } else {  // Reset
                     initialFABBottomMargin?.let {
+                        setMargins(leftMargin, topMargin, rightMargin, it)
+                    }
+                }
+            }
+
+            // Keep adapter list from behind the FAB
+            binding.collectionList.updateLayoutParams<MarginLayoutParams> {
+                if (isActive) {  // Give extra room
+                    setMargins(leftMargin, topMargin, rightMargin, (bottomMargin + buffer).toInt())
+                } else {  // Reset
+                    initialCollectionListBottomMargin?.let {
                         setMargins(leftMargin, topMargin, rightMargin, it)
                     }
                 }
@@ -110,6 +117,7 @@ class CollectionsFragment : Fragment() {
         }
 
         initialFABBottomMargin = binding.extendedFab.marginBottom
+        initialCollectionListBottomMargin = binding.collectionList.marginBottom
 
     }
 

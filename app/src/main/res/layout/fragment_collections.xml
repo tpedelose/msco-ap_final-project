@@ -37,7 +37,6 @@
                 android:layout_height="?attr/actionBarSize"
                 android:elevation="0dp"
                 app:layout_collapseMode="pin"
-                app:menu="@menu/app_bar_feed_menu"
                 app:title="Collections" />
 
         </com.google.android.material.appbar.CollapsingToolbarLayout>
@@ -68,6 +67,7 @@
                     android:id="@+id/collection_list"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginBottom="72dp"
                     android:orientation="vertical"
                     app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
                     app:spanCount="2"

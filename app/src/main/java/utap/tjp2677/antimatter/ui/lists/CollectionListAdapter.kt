@@ -10,6 +10,7 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.R
+import com.google.android.material.color.MaterialColors
 import utap.tjp2677.antimatter.MainViewModel
 import utap.tjp2677.antimatter.authentication.models.Collection
 import utap.tjp2677.antimatter.databinding.CollectionItemBinding
@@ -36,11 +37,21 @@ class CollectionListAdapter(private val viewModel: MainViewModel, val onClickCal
         binding.title.text = item.name
 
         // Change text style for "most important" collection (or reset)
-        val textStyle = when (position) {
-            0 -> R.style.TextAppearance_Material3_HeadlineSmall
-            else -> R.style.TextAppearance_Material3_TitleMedium
+        val (textStyle, bgcolor) = when (position) {
+            0, 1, 2 -> {
+                val style = R.style.TextAppearance_Material3_TitleLarge // R.style.TextAppearance_Material3_HeadlineSmall
+                val bgcolor = MaterialColors.getColor(binding.root, R.attr.colorSecondaryContainer)
+                Pair(style, bgcolor)
+            }
+            else -> {
+                val style = R.style.TextAppearance_Material3_TitleMedium
+                val bgcolor = MaterialColors.getColor(binding.root, R.attr.colorSurfaceVariant)
+                Pair(style, bgcolor)
+            }
         }
+        binding.root.explicitStyle
         binding.title.setTextAppearance(textStyle)
+        binding.root.setCardBackgroundColor(bgcolor)
 
         // Click listeners
         binding.root.setOnClickListener {

@@ -210,13 +210,15 @@ class FirestoreHelper(private val fbUser: FirebaseUser) {
 
     fun createCollection(collectionList: MutableLiveData<List<Collection>>,
                          name: String, icon: String, order: Int) {
+        // Todo? Consider checking for distinct collection names
         val TAG = "CreateCollection"
         val collectionRef = db.collection("$userPrefix/collections/")
 
         val annotationData = hashMapOf(
             "name" to name,
             "icon" to icon,
-            "order" to order
+            "order" to order,
+            "count" to 0,
         )
 
         collectionRef

@@ -1,13 +1,10 @@
 package utap.tjp2677.antimatter.ui.lists
 
-import android.content.res.Resources.Theme
 import android.graphics.*
 import android.util.Log
-import android.util.TypedValue
 import android.view.HapticFeedbackConstants
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import androidx.annotation.ColorInt
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.graphics.BlendModeColorFilterCompat
 import androidx.core.graphics.BlendModeCompat
@@ -62,7 +59,6 @@ open class ArticleListAdapter(val onClickCallback: (Int) -> Unit)
 
         /*  Handle Read Status  */
         // Dealing with colors in Kotlin:  https://material.io/blog/android-material-theme-color#:~:text=MaterialColors%C2%A0utility%20class
-
         val titleTextColor = when (item.isRead) {
             true -> MaterialColors.getColor(binding.root, android.R.attr.textColorHint)
             false -> MaterialColors.getColor(binding.root, android.R.attr.textColorPrimary)

@@ -61,7 +61,6 @@ class MainActivity : AppCompatActivity() {
                 // ignore if fragment already exists
                 // Todo:  I think this is causing it to not be recreated in some cases
                 val frag = supportFragmentManager.findFragmentById(R.id.fragment_player) as? PlayerFragment
-//                Log.d("Create player?","Player exist?: $frag")
                 if (frag != null) { return@observe }
 
                 // Else, create the fragment!
