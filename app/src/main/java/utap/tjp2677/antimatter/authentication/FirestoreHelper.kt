@@ -33,7 +33,7 @@ fun <T> DocumentSnapshot.toObjectOrNull(dataclass: Class<T>): T? {
 
 class FirestoreHelper(private val fbUser: FirebaseUser) {
 
-    val userPrefix = "/userData/${fbUser.uid}"
+    private val userPrefix = "/userData/${fbUser.uid}"
 
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance().apply {
         this.firestoreSettings = firestoreSettings {

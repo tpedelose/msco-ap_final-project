@@ -1,6 +1,5 @@
 package utap.tjp2677.antimatter.ui.article
 
-import android.content.Context
 import android.graphics.Color
 import android.graphics.Rect
 import android.os.Bundle
@@ -31,9 +30,6 @@ import utap.tjp2677.antimatter.utils.toDp
 import kotlin.math.max
 
 
-//https://www.google.com/search?q=how+fast+does+the+average+person+read
-const val wordsPerMinute = 200
-
 class ArticleFragment : Fragment() {
 
     private var _binding: FragmentArticleBinding? = null
@@ -42,6 +38,10 @@ class ArticleFragment : Fragment() {
 
     private var highlightColor: Int = -1
     private var textColor: Int = -1
+
+    companion object {
+        const val wordsPerMinute = 200  //https://www.google.com/search?q=how+fast+does+the+average+person+read
+    }
 
 
     override fun onCreateView(
@@ -57,7 +57,7 @@ class ArticleFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         initMenuProvider()
-        initColors(binding.root.context)
+        initColors(binding.root)
 
         // Interactions
         binding.content.movementMethod = LinkMovementMethod.getInstance()
@@ -195,6 +195,7 @@ class ArticleFragment : Fragment() {
                             // Build the dialog
                             MaterialAlertDialogBuilder(binding.root.context)
                                 .setTitle("Add to collection?")
+                                .setIcon(R.drawable.ic_twotone_bookmarks_24)
                                 .setMultiChoiceItems(names, checked) { dialog, which, isChecked ->
                                     // Track which collections are changed
                                     Log.d("Checked", dialog.toString())
@@ -248,12 +249,12 @@ class ArticleFragment : Fragment() {
             }, viewLifecycleOwner, Lifecycle.State.RESUMED)
     }
 
-    private fun initColors (context: Context) {
+    private fun initColors (view: View) {
         highlightColor = MaterialColors.getColor(
-            context, com.google.android.material.R.attr.colorPrimaryContainer, Color.YELLOW)
+            view, com.google.android.material.R.attr.colorPrimaryContainer, Color.YELLOW)
         // WARN: Text color can look weird w/ dynamic colors
         textColor = MaterialColors.getColor(
-            context, com.google.android.material.R.attr.colorOnPrimaryContainer, Color.BLACK)
+            view, com.google.android.material.R.attr.colorOnPrimaryContainer, Color.BLACK)
     }
 
     private fun glideFetch(url: String?, imageView: ImageView) {

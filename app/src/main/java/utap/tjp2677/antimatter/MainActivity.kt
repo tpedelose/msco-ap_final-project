@@ -48,7 +48,7 @@ class MainActivity : AppCompatActivity() {
                 // Fetch starting data
                 Log.d("ObserveUser", "${it.uid} logged in")
                 viewModel.initHelper()
-                viewModel.fetchCollectionAsOpen("Inbox") // Todo:  title doesn't update on first load?
+                viewModel.fetchCollectionAsOpen("Inbox")
                 viewModel.fetchCollections()
                 viewModel.fetchSubscriptions()
             }

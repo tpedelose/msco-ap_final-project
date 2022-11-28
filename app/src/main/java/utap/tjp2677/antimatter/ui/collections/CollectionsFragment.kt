@@ -1,15 +1,19 @@
 package utap.tjp2677.antimatter.ui.collections
 
+import android.content.Context
 import android.graphics.Color
 import android.os.Bundle
 import android.text.InputFilter
+import android.text.Spanned
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewGroup.MarginLayoutParams
+import android.widget.Toast
 import androidx.core.view.marginBottom
 import androidx.core.view.updateLayoutParams
+import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
@@ -61,13 +65,29 @@ class CollectionsFragment : Fragment() {
 
             val dialogBinding = EditCollectionViewBinding.inflate(LayoutInflater.from(binding.root.context), null, false)
             dialogBinding.emojiField.editText?.filters = arrayOf(
-                InputFilter.LengthFilter(1),
-                // TODO: Emoji Filter
+                EmojiFilter(dialogBinding.emojiField.context)
+//                InputFilter.LengthFilter(9),
             )
+
+            dialogBinding.emojiField.editText?.addTextChangedListener {
+                // Always start with EmojiFilter
+                val filters = mutableListOf<InputFilter>(
+                    EmojiFilter(dialogBinding.emojiField.context)
+                )
+
+                // If text, add LengthFilter to cap to one input (since unicode Emoji vary in length)
+                if (!it.isNullOrBlank()) {
+                    filters.add(InputFilter.LengthFilter(it.length))
+                }
+
+                // Set filters
+                dialogBinding.emojiField.editText?.filters = filters.toTypedArray()
+            }
 
             MaterialAlertDialogBuilder(binding.root.context)
                 // TODO? Check if collection with name already exists
                 .setTitle("Create collection")
+                .setIcon(R.drawable.ic_twotone_library_add_24)
                 .setView(dialogBinding.root)
                 .setNegativeButton("Cancel") { _ /*dialog*/, _ /*which*/ ->
                     // Do nothing
@@ -76,7 +96,18 @@ class CollectionsFragment : Fragment() {
                     // Create a Collection
                     val collectionName = dialogBinding.textField.editText?.text.toString()
                     val emojiIcon = dialogBinding.emojiField.editText?.text.toString()
-                    viewModel.createCollection(collectionName, emojiIcon)
+
+                    when {
+                        collectionName.isBlank() -> {
+                            Toast.makeText(context, "Name cannot be blank", Toast.LENGTH_SHORT).show()
+                        }
+                        emojiIcon.isBlank() -> {
+                            Toast.makeText(context, "Emoji icon cannot be blank", Toast.LENGTH_SHORT).show()
+                        }
+                        collectionName.isNotBlank() && emojiIcon.isNotBlank() -> {
+                            viewModel.createCollection(collectionName, emojiIcon)
+                        }
+                    }
                 }
                 .show()
         }
@@ -90,7 +121,6 @@ class CollectionsFragment : Fragment() {
 
         viewModel.observePlayerIsActive().observe(viewLifecycleOwner) { isActive ->
             // Todo: avoid hard-setting of height + margins
-
             val buffer = (56+12).toPx
 
             // Keep the FAB from behind the Player
@@ -168,5 +198,55 @@ class CollectionsFragment : Fragment() {
             divider.dividerColor = Color.TRANSPARENT
             rv.addItemDecoration(divider)
         }
+    }
+}
+
+class EmojiFilter(val context: Context) : InputFilter {
+    // From:  https://github.com/rpandey1234/EmojiStatus/blob/5d1eb217bbc6294f8a7ff5515f9138ef2e9417b5/app/src/main/java/edu/stanford/rkpandey/emojistatus/MainActivity.kt#:~:text=inner%20class%20EmojiFilter%20%3A%20InputFilter%20%7B
+
+    private companion object {
+        private val TAG = "EmojiFilter"
+        private val VALID_CHAR_TYPES = listOf(
+            Character.NON_SPACING_MARK, // 6
+//                Character.DECIMAL_DIGIT_NUMBER, // 9
+//                Character.LETTER_NUMBER, // 10
+//                Character.OTHER_NUMBER, // 11
+            Character.SPACE_SEPARATOR, // 12
+            Character.FORMAT, // 16
+            Character.SURROGATE, // 19
+//                Character.DASH_PUNCTUATION, // 20
+//                Character.START_PUNCTUATION, // 21
+//                Character.END_PUNCTUATION, // 22
+//                Character.CONNECTOR_PUNCTUATION, // 23
+//                Character.OTHER_PUNCTUATION, // 24
+            Character.MATH_SYMBOL, // 25
+            Character.CURRENCY_SYMBOL, //26
+            Character.MODIFIER_SYMBOL, // 27
+            Character.OTHER_SYMBOL // 28
+        ).map { it.toInt() }.toSet()
+    }
+
+    override fun filter(
+        source: CharSequence?,
+        start: Int,
+        end: Int,
+        dest: Spanned?,
+        dStart: Int,
+        dEnd: Int
+    ): CharSequence {
+        if (source.isNullOrBlank()) { return "" }
+
+        Log.d(TAG, "$source is ${source.length} chars long")
+
+        for (inputChar in source) {
+            val type = Character.getType(inputChar)
+            if (!VALID_CHAR_TYPES.contains(type)) {
+                // This gives an error (but doesn't crash) for some reason? Maybe the context is bad?
+                Toast.makeText(context, "Only supported emojis are allowed", Toast.LENGTH_SHORT).show()
+                return ""
+            }
+        }
+        // The CharSequence being added is a valid emoji! Allow it to be added
+        return source
     }
 }

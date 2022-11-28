@@ -42,7 +42,7 @@ class FollowListAdapter(private val viewModel: MainViewModel, val onClickCallbac
 
         item.iconLink?.let {
             Glide.with(binding.root.context)
-                .asBitmap() // Try to display animated Gifs and video still
+                .asBitmap()
                 .load(it)
                 .apply(glideOptions)
                 .into(binding.image)

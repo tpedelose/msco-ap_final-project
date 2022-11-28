@@ -38,7 +38,7 @@ open class ArticleListAdapter(val onClickCallback: (Int) -> Unit)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val item = getItem(position) ?: return
+        val item = getItem(position)
         val binding = holder.articleBinding
 
         binding.author.text = item.author
@@ -77,6 +77,10 @@ open class ArticleListAdapter(val onClickCallback: (Int) -> Unit)
 
     }
 
+    public override fun getItem(position: Int): Article { // Expose the internal items
+        return super.getItem(position)
+    }
+
     class Diff : DiffUtil.ItemCallback<Article>() {
         override fun areItemsTheSame(oldItem: Article, newItem: Article): Boolean {
             return oldItem.hashCode() == newItem.hashCode()
@@ -103,9 +107,19 @@ open class ArticleItemTouchHelper(
 
     private var hapticsTriggered = false
     private var reachedMax = false
+    private var activated = false
+
     private val buttonWidth = 80.toPx // itemView.width * 1/5f
     private val buttonBaseColor = com.google.android.material.R.attr.colorSurfaceVariant //com.google.android.material.R.attr.colorOnSurfaceVariant
     private val textBaseColor = com.google.android.material.R.attr.colorOnSurfaceVariant // Color.WHITE
+
+    private val iconStart = mapOf(
+        "add" to R.drawable.ic_twotone_bookmark_add_24, //R.drawable.ic_outline_bookmark_add_24,
+        "saved" to R.drawable.ic_twotone_bookmark_added_24, //R.drawable.ic_outline_bookmark_added_24,
+        "remove" to R.drawable.ic_twotone_bookmark_remove_24, //R.drawable.ic_outline_bookmark_remove_24,
+    )
+    private val iconEnd = R.drawable.ic_outline_done_24  // Todo: Switch to "archive"?
+
     private val buttonEndActivatedColor = Color.HSVToColor(floatArrayOf(92f, 0.18f, 0.88f))
     private val buttonStartActivatedColor = Color.HSVToColor(floatArrayOf(260f, 0.13f, 0.88f))
     private val textActivatedColor = com.google.android.material.R.attr.colorOnSurfaceInverse
@@ -152,7 +166,6 @@ open class ArticleItemTouchHelper(
             .withEndAction {
 //                 adapter.notifyItemChanged(viewHolder.absoluteAdapterPosition)  // Plays animations...
                 adapter.notifyDataSetChanged()  // Inefficient, but no animation
-                // Todo:  get rid of this now?
             }
             .start()
     }
@@ -205,11 +218,18 @@ open class ArticleItemTouchHelper(
         when {
             dX < 0 -> {
                 Log.v("SWIPE TO START", dX.toString())
-                drawIndicator(c, viewHolder, ItemTouchHelper.START)
+                drawIndicator(c, viewHolder, ItemTouchHelper.START, iconEnd)
             }
             dX > 0 -> {
                 Log.v("SWIPE TO END", dX.toString())
-                drawIndicator(c, viewHolder, ItemTouchHelper.END)
+                val item = adapter.getItem(viewHolder.absoluteAdapterPosition)
+                val icon = when {
+                    item.isQueued && reachedMax -> iconStart["remove"]  // bookmark-
+                    !item.isQueued && reachedMax -> iconStart["saved"]  // bookmark_check
+                    item.isQueued && !reachedMax -> iconStart["saved"]  // bookmark_check
+                    else -> iconStart["add"]  // bookmark+
+                }
+                drawIndicator(c, viewHolder, ItemTouchHelper.END, icon!!)
             }
             else -> c.restore()
         }
@@ -217,7 +237,7 @@ open class ArticleItemTouchHelper(
         super.onChildDraw(c, recyclerView, viewHolder, xD, dY, actionState, isCurrentlyActive)
     }
 
-    private fun drawIndicator(c: Canvas, viewHolder: ViewHolder, direction: Int) {
+    private fun drawIndicator(c: Canvas, viewHolder: ViewHolder, direction: Int, icon: Int) {
 
         val itemView = viewHolder.itemView
 
@@ -250,27 +270,19 @@ open class ArticleItemTouchHelper(
         indicator?.let { c.drawRect(indicator, indicatorPaint) }
 
         /*  Foreground  */
-        val icon = when (direction) {
-            ItemTouchHelper.START -> { // Draw indicator at END
-                ResourcesCompat.getDrawable(itemView.context.resources, R.drawable.ic_outline_done_24, null)
-            }
-            ItemTouchHelper.END -> { // Draw indicator at START
-                ResourcesCompat.getDrawable(itemView.context.resources, R.drawable.ic_outline_bookmarks_24, null)
-            }
-            else -> null
-        }
+        val iconDrawable = ResourcesCompat.getDrawable(itemView.context.resources, icon, null)
 
-        icon?.let {
+        iconDrawable?.let {
             val iconColor = when (reachedMax) {
-                // Todo?  Animate/switch icons
                 false -> MaterialColors.getColor(viewHolder.itemView, textBaseColor)
                 true -> MaterialColors.getColor(viewHolder.itemView, textActivatedColor)
             }
-            icon.colorFilter = BlendModeColorFilterCompat.createBlendModeColorFilterCompat(iconColor, BlendModeCompat.SRC_ATOP)
+            it.colorFilter = BlendModeColorFilterCompat
+                .createBlendModeColorFilterCompat(iconColor, BlendModeCompat.SRC_ATOP)
 
             val buttonHeight = itemView.bottom - itemView.top
-            val iconHeight = it.intrinsicHeight*1.05
-            val iconWidth = it.intrinsicWidth*1.05
+            val iconHeight = it.intrinsicHeight*1.3
+            val iconWidth = it.intrinsicWidth*1.3
 
             when (direction) {
                 ItemTouchHelper.START -> { // Draw indicator at END

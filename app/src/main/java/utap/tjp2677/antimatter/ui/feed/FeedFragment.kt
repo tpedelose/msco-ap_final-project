@@ -7,6 +7,8 @@ import android.view.ViewGroup
 import androidx.fragment.app.*
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.*
+import com.google.android.material.color.MaterialColors
+import com.google.android.material.elevation.SurfaceColors
 import utap.tjp2677.antimatter.MainViewModel
 import utap.tjp2677.antimatter.R
 import utap.tjp2677.antimatter.authentication.models.Collection
@@ -14,6 +16,7 @@ import utap.tjp2677.antimatter.databinding.FragmentArticlesListBinding
 import utap.tjp2677.antimatter.databinding.FragmentFeedBinding
 import utap.tjp2677.antimatter.ui.lists.ArticleItemTouchHelper
 import utap.tjp2677.antimatter.ui.lists.ArticleListAdapter
+import javax.annotation.Nullable
 
 
 class FeedFragment : Fragment() {
@@ -38,6 +41,12 @@ class FeedFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        // Initialize data
+        initRecyclerView()
+
+        // Start with loading indicator
+        articlesListBinding.refresh.isRefreshing = true
 
         // Observers
         viewModel.observeOpenCollection().observe(viewLifecycleOwner) {
@@ -65,9 +74,6 @@ class FeedFragment : Fragment() {
                 fetchWithFilter(it)
             }
         }
-
-        // Initialize data
-        initRecyclerView()
     }
 
     override fun onDestroyView() {
@@ -100,16 +106,15 @@ class FeedFragment : Fragment() {
 
     private fun markAsReadCallback(position: Int) {
         viewModel.toggleArticleReadStatus(position) {
-            // I guess this is the only way of doing a smooth update?
-            adapter.notifyItemChanged(position)
+            // I guess this is the only way of doing a "smooth" update?
+//            adapter.notifyItemChanged(position)  // Plays animations...
+            adapter.notifyDataSetChanged()  // inefficient, but no animation
         }
     }
 
     private fun toggleQueueCallback(position: Int) {
         viewModel.toggleArticleQueueStatus(position) {
-            // I guess this is the only way of doing a smooth update?
-//            adapter.notifyItemChanged(position)
-            // TODO? remove immediately?
+            // Nothing for now
         }
     }
 

@@ -52,9 +52,7 @@
 <!--            app:layout_constraintBottom_toBottomOf="@+id/publication"-->
 <!--            app:layout_constraintEnd_toEndOf="parent"/>-->
 
-
     </androidx.constraintlayout.widget.ConstraintLayout>
-
 
     <TextView
         android:id="@+id/title"
@@ -125,15 +123,6 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             app:icon="@drawable/ic_outline_play_arrow_24" />
-
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="end">
-        <!--    TODO: Tags    -->
-
 
     </LinearLayout>
 

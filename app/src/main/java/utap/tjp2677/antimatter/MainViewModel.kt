@@ -128,7 +128,6 @@ class MainViewModel : ViewModel() {
     }
 
     /* --- Update --- */
-    // Todo?
 
     /* --- Destroy --- */
     fun deleteAnnotation(article: Article, annotation: Annotation) {
