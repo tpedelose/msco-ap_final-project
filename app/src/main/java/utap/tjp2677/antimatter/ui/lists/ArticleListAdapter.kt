@@ -29,7 +29,13 @@ open class ArticleListAdapter(val onClickCallback: (Int) -> Unit)
     : ListAdapter<Article, ArticleListAdapter.ViewHolder>(Diff()) {
 
     inner class ViewHolder(val articleBinding: FeedItemBinding) :
-        RecyclerView.ViewHolder(articleBinding.root) {}
+        RecyclerView.ViewHolder(articleBinding.root) {
+            init {
+                articleBinding.root.setOnClickListener {
+                    onClickCallback(absoluteAdapterPosition)
+                }
+            }
+        }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val rowBinding = FeedItemBinding.inflate(
@@ -71,10 +77,6 @@ open class ArticleListAdapter(val onClickCallback: (Int) -> Unit)
             }
         }
 
-        binding.root.setOnClickListener {
-            onClickCallback(position)
-        }
-
         /*  Handle Read Status  */
         // Dealing with colors in Kotlin:  https://material.io/blog/android-material-theme-color#:~:text=MaterialColors%C2%A0utility%20class
         val titleTextColor = when (item.isRead) {
@@ -90,9 +92,6 @@ open class ArticleListAdapter(val onClickCallback: (Int) -> Unit)
         // Todo:  combine author + publication
         binding.author.setTextColor(secondaryTextColor)
         binding.publication.setTextColor(secondaryTextColor)
-
-        /*  Handle Read Later Status  */
-
     }
 
     public override fun getItem(position: Int): Article { // Expose the internal items
