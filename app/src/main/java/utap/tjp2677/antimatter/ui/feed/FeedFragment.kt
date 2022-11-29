@@ -27,7 +27,7 @@ class FeedFragment : Fragment() {
     private lateinit var adapter: ArticleListAdapter
     private lateinit var articlesListBinding: FragmentArticlesListBinding
 
-    private val fetchLimit = 10
+    private val fetchLimit = 20
 
     override fun onCreateView(
         inflater: LayoutInflater,
