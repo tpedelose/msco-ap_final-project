@@ -210,26 +210,16 @@ class ArticleFragment : Fragment() {
                                 .setIcon(R.drawable.ic_twotone_bookmarks_24)
                                 .setMultiChoiceItems(names, checked) { dialog, which, isChecked ->
                                     // Track which collections are changed
-                                    Log.d("Checked", dialog.toString())
-                                    Log.d("Checked", which.toString())
-                                    Log.d("Checked", isChecked.toString())
-                                    Log.d("Checked", checked[which].toString())
-
                                     hasChanged[which] = !hasChanged[which]
                                 }
                                 .setNegativeButton("Cancel") { _ /*dialog*/, _ /*which*/->
                                     // Do nothing
                                 }
                                 .setPositiveButton("Submit") { dialog, which ->
-                                    Log.d("Checked", names.toList().toString())
-                                    Log.d("Checked", hasChanged.toList().toString())
-
                                     // Add article to collection in batch?
                                     hasChanged.forEachIndexed { index, changed ->
                                         // update any changed entries
                                         if (changed) {
-                                            Log.d("Changed!", "$index, ${checked[index]}")
-                                            Log.d("Changed!", "$index, ${userCollections[index]}")
                                             if (checked[index]) {
                                                 // wasn't in collection, add
                                                 viewModel.addArticleToCollection(article, userCollections[index])

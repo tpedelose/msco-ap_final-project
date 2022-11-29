@@ -13,27 +13,6 @@ import utap.tjp2677.antimatter.R
 class AuthInit(viewModel: MainViewModel, signInLauncher: ActivityResultLauncher<Intent>) {
     companion object {
         private const val TAG = "AuthInit"
-        fun setDisplayName(displayName : String, viewModel: MainViewModel) {
-            Log.d(TAG, "XXX profile change request")
-            //SSS
-            val user = FirebaseAuth.getInstance().currentUser ?: return
-            val profileUpdates = UserProfileChangeRequest.Builder()
-                .setDisplayName(displayName)
-                .build()
-
-            user.updateProfile(profileUpdates)
-                .addOnCompleteListener { task ->
-                    if (task.isSuccessful) {
-                        viewModel.updateUser()
-                    } else {
-                        Log.d(TAG,
-                            "XXX profile update failed ${task.exception?.toString()}"
-                        )
-                    }
-                }
-            //EEE // XXX Write me. User is attempting to update display name. Get the profile updates (see android doc)
-            // UserProfileChangeRequest.Builder()
-        }
     }
 
     init {
@@ -46,22 +25,16 @@ class AuthInit(viewModel: MainViewModel, signInLauncher: ActivityResultLauncher<
                 AuthUI.IdpConfig.EmailBuilder().build())
 
             // Create and launch sign-in intent
-            //SSS
             val signInIntent = AuthUI.getInstance()
                 .createSignInIntentBuilder()
                 .setAvailableProviders(providers)
                 .setIsSmartLockEnabled(false)
                 .build()
             signInLauncher.launch(signInIntent)
-            //EEE // XXX Write me. Set authentication providers and start sign-in for user
             // setIsSmartLockEnabled(false) solves some problems
         } else {
             Log.d(TAG, "XXX user ${user.displayName} email ${user.email}")
             viewModel.updateUser()
         }
-    }
-
-    fun validateBackend() {
-
     }
 }
