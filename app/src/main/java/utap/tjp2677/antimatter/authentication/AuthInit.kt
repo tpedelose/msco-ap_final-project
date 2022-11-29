@@ -7,6 +7,7 @@ import com.firebase.ui.auth.AuthUI
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.UserProfileChangeRequest
 import utap.tjp2677.antimatter.MainViewModel
+import utap.tjp2677.antimatter.R
 
 // https://firebase.google.com/docs/auth/android/firebaseui
 class AuthInit(viewModel: MainViewModel, signInLauncher: ActivityResultLauncher<Intent>) {
@@ -36,7 +37,8 @@ class AuthInit(viewModel: MainViewModel, signInLauncher: ActivityResultLauncher<
     }
 
     init {
-        val user = FirebaseAuth.getInstance().currentUser
+        val fbAuth = FirebaseAuth.getInstance()
+        val user = fbAuth.currentUser
         if(user == null) {
             Log.d(TAG, "XXX user null")
             // Choose authentication providers
@@ -57,5 +59,9 @@ class AuthInit(viewModel: MainViewModel, signInLauncher: ActivityResultLauncher<
             Log.d(TAG, "XXX user ${user.displayName} email ${user.email}")
             viewModel.updateUser()
         }
+    }
+
+    fun validateBackend() {
+
     }
 }

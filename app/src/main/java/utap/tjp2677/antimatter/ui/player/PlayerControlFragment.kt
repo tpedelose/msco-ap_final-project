@@ -76,14 +76,20 @@ class PlayerFragment : Fragment() {
                     .into(binding.backgroundImage)
             } ?: binding.backgroundImage.setImageDrawable(null)  // Clear background image
 
-            it.publicationIconLink?.let { iconPath ->
-                Glide.with(binding.root.context)
-                    .load(iconPath)
-                    .transition(withCrossFade(transformationFactory))
-                    .diskCacheStrategy(DiskCacheStrategy.ALL)
-                    .transform(RoundedCorners (20.toDp.toInt()))
-                    .into(binding.foregroundImage)
+            when (it.publicationIconLink.isNullOrBlank()) {
+                true -> { // Reset image
+                    binding.foregroundImage.setImageResource(R.drawable.ic_outline_album_24)
+                }
+                false -> { // Set album image
+                    Glide.with(binding.root.context)
+                        .load(it.publicationIconLink)
+                        .transition(withCrossFade(transformationFactory))
+                        .diskCacheStrategy(DiskCacheStrategy.ALL)
+                        .transform(RoundedCorners (20.toDp.toInt()))
+                        .into(binding.foregroundImage)
+                }
             }
+
         }
 
 

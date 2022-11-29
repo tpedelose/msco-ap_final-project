@@ -330,10 +330,10 @@ class MainViewModel : ViewModel() {
 
     private fun createAttribution(article: Article): String {
         return when {
-            article.author.isNotBlank() && article.publicationName.isNotBlank() -> {
+            !article.author.isNullOrBlank() && article.publicationName.isNotBlank() -> {
                 "${article.author} for ${article.publicationName}"
             }
-            article.author.isNotBlank() -> "From ${article.author}"
+            !article.author.isNullOrBlank() -> "From ${article.author}"
             article.publicationName.isNotBlank() -> "From ${article.publicationName}"
             else -> ""
         }

@@ -12,6 +12,7 @@ import android.widget.ImageView
 import android.widget.ScrollView
 import android.widget.TextView
 import androidx.core.view.MenuProvider
+import androidx.core.view.isGone
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
@@ -143,9 +144,20 @@ class ArticleFragment : Fragment() {
         } ?: binding.heroImage.setImageDrawable(null)
 
         // Set text
+        binding.header.publicationName.text = article.publicationName
         binding.header.title.text = article.title
         binding.header.authorName.text = article.author
-        binding.header.publicationName.text = article.publicationName
+
+        when (article.author.isNullOrBlank()) {
+            true -> {  // no author
+                binding.header.author.isGone = true
+            }
+            false -> {  // Populate author
+                binding.header.author.isGone = false
+                binding.header.authorName.text = article.author
+            }
+        }
+
 
         val articleContent = Html.fromHtml(article.content, Html.FROM_HTML_MODE_LEGACY)
         binding.content.text = articleContent

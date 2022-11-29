@@ -13,7 +13,7 @@ data class Article(
 
     // Content
     var title: String = "",
-    var author: String = "",
+    var author: String? = "",
     var content: String = "",
     var link: String = "",
     var image: String? = null,

@@ -17,6 +17,7 @@ import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.elevation.SurfaceColors
+import com.google.firebase.auth.FirebaseAuth
 import utap.tjp2677.antimatter.authentication.AuthInit
 import utap.tjp2677.antimatter.databinding.ActivityMainBinding
 import utap.tjp2677.antimatter.ui.player.PlayerFragment
@@ -47,6 +48,7 @@ class MainActivity : AppCompatActivity() {
 
                 // Fetch starting data
                 Log.d("ObserveUser", "${it.uid} logged in")
+
                 viewModel.initHelper()
                 viewModel.fetchCollectionAsOpen("Inbox")
                 viewModel.fetchCollections()

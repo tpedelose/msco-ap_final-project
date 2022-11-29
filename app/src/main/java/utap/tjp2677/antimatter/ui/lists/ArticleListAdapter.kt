@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.graphics.BlendModeColorFilterCompat
 import androidx.core.graphics.BlendModeCompat
+import androidx.core.view.isGone
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.ListAdapter
@@ -41,16 +42,33 @@ open class ArticleListAdapter(val onClickCallback: (Int) -> Unit)
         val item = getItem(position)
         val binding = holder.articleBinding
 
-        binding.author.text = item.author
         binding.publication.text = item.publicationName
         binding.title.text = item.title
 
-        item.image?.let {
-            Glide.with(binding.root.context)
-                .asBitmap() // Try to display animated Gifs and video still
-                .load(it)
-                .fitCenter()
-                .into(binding.heroImage)
+        when (item.author.isNullOrBlank()) {
+            true -> {  // no author
+                binding.author.isGone = true
+                binding.separator.isGone = true
+            }
+            false -> {  // Populate author
+                binding.author.isGone = false
+                binding.separator.isGone = false
+                binding.author.text = item.author
+            }
+        }
+
+        when (item.image.isNullOrBlank()) {
+            true -> {  // No image, hide
+                binding.heroImage.isGone = true
+            }
+            false -> {
+                binding.heroImage.isGone = false
+                Glide.with(binding.root.context)
+                    .asBitmap() // Try to display animated Gifs and video still
+                    .load(item.image)
+                    .fitCenter()
+                    .into(binding.heroImage)
+            }
         }
 
         binding.root.setOnClickListener {
